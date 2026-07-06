@@ -43,15 +43,20 @@ struct RootView: View {
 
     var body: some View {
         @Bindable var router = router
-        ZStack {
-            pane(.home) { HomeTab(selectedTab: $router.selectedTab) }
-            pane(.visualize) { VisionHomeView() }
-            pane(.vault) { VaultHomeView() }
-            pane(.expert) { ExpertChatView() }
-            pane(.more) { MoreView(selectedTab: $router.selectedTab) }
-        }
-        .animation(.easeInOut(duration: 0.16), value: router.selectedTab)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        // The tab bar sits BELOW the content in a VStack (not as a safe-area
+        // inset) so scroll content can never end up hidden behind it —
+        // additional bottom safe area doesn't reliably propagate into
+        // NavigationStacks on device, which left bottom buttons covered.
+        VStack(spacing: 0) {
+            ZStack {
+                pane(.home) { HomeTab(selectedTab: $router.selectedTab) }
+                pane(.visualize) { VisionHomeView() }
+                pane(.vault) { VaultHomeView() }
+                pane(.expert) { ExpertChatView() }
+                pane(.more) { MoreView(selectedTab: $router.selectedTab) }
+            }
+            .animation(.easeInOut(duration: 0.16), value: router.selectedTab)
+
             TaulbeeTabBar(selected: $router.selectedTab)
         }
         .tint(Theme.brand)
