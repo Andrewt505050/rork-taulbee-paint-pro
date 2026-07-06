@@ -12,6 +12,7 @@ struct ResultView: View {
     var showSaveButton: Bool = false
 
     @State private var showShare = false
+    @State private var showEstimate = false
     @State private var didSave = false
     @State private var appeared = false
 
@@ -23,6 +24,7 @@ struct ResultView: View {
                 if !result.causes.isEmpty { causesCard }
                 if !result.solutions.isEmpty { solutionsCard }
                 if !result.whenToCallPro.isEmpty { proCard }
+                inspectionPrompt
                 actions
                 Color.clear.frame(height: 8)
             }
@@ -34,6 +36,9 @@ struct ResultView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showShare) {
             ShareSheet(items: shareItems)
+        }
+        .sheet(isPresented: $showEstimate) {
+            RequestEstimateView(contextLine: "Regarding defect scan: \(result.defectName) (\(result.severity.label) severity)")
         }
         .onAppear {
             withAnimation(.easeOut(duration: 0.45)) { appeared = true }
@@ -162,6 +167,41 @@ struct ResultView: View {
             RoundedRectangle(cornerRadius: Theme.cardRadius)
                 .stroke(Theme.brand.opacity(0.18), lineWidth: 1)
         )
+    }
+
+    private var inspectionPrompt: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "person.badge.shield.checkmark.fill")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Theme.brand)
+                .frame(width: 40, height: 40)
+                .background(Theme.lavender, in: .circle)
+            VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Want a professional opinion?")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Theme.ink)
+                    Text("Taulbee Painting can inspect this in person and give you a clear plan \u{2014} free and no pressure.")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Button {
+                    Haptics.tap()
+                    showEstimate = true
+                } label: {
+                    Text("Request Inspection")
+                        .font(.system(size: 13.5, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .frame(height: 36)
+                        .background(Theme.brandGradient, in: .capsule)
+                }
+                .buttonStyle(ScaleButtonStyle())
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .paintCard(padding: 16)
     }
 
     private var actions: some View {

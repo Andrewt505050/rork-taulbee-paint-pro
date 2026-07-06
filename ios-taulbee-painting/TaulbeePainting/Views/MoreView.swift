@@ -14,6 +14,7 @@ struct MoreView: View {
     @State private var path = NavigationPath()
     @State private var showPrivacy = false
     @State private var showSettings = false
+    @State private var showEstimate = false
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
 
     var body: some View {
@@ -22,6 +23,7 @@ struct MoreView: View {
                 VStack(spacing: 18) {
                     profileCard
                     quoteCTA
+                    hubGroup
                     projectsGroup
                     appearanceGroup
                     contactGroup
@@ -44,6 +46,20 @@ struct MoreView: View {
             .navigationDestination(for: PaintScan.self) { scan in
                 ResultView(result: ScanResult(scan: scan))
             }
+            .navigationDestination(for: HubRoute.self) { route in
+                switch route {
+                case .maintenance:
+                    MaintenanceView()
+                case .timeline:
+                    ActivityTimelineView()
+                }
+            }
+            .navigationDestination(for: PaintReminder.self) { reminder in
+                ReminderDetailView(reminder: reminder)
+            }
+            .sheet(isPresented: $showEstimate) {
+                RequestEstimateView()
+            }
             .sheet(isPresented: $showPrivacy) {
                 InfoSheet(
                     title: "Privacy & Data",
@@ -55,7 +71,7 @@ struct MoreView: View {
                 InfoSheet(
                     title: "App Settings",
                     icon: "gearshape.fill",
-                    message: "Settings like notifications, default paint brands and units are coming soon. For now, the app keeps everything local and ready to use."
+                    message: "Reminder notifications arrive on each reminder's due date. To adjust or silence them, open iOS Settings \u{2192} Notifications \u{2192} Taulbee Painting. Everything else stays local on your device."
                 )
             }
         }
@@ -129,14 +145,34 @@ struct MoreView: View {
 
     // MARK: Groups
 
+    private var hubGroup: some View {
+        MoreGroup(title: "Homeowner Hub") {
+            MoreRow(icon: "calendar.badge.clock", tint: Theme.accent, title: "Maintenance Reminders") {
+                path.append(HubRoute.maintenance)
+            }
+            MoreDivider()
+            MoreRow(icon: "lock.shield.fill", tint: Theme.brand, title: "Paint Vault") {
+                selectedTab = .vault
+            }
+            MoreDivider()
+            MoreRow(icon: "paintpalette.fill", tint: Theme.lavenderAccent, title: "Saved Colors") {
+                selectedTab = .vault
+            }
+            MoreDivider()
+            MoreRow(icon: "photo.fill.on.rectangle.fill", tint: Color(hex: "3B82A0"), title: "Project Photos") {
+                selectedTab = .vault
+            }
+            MoreDivider()
+            MoreRow(icon: "clock.arrow.circlepath", tint: Color(hex: "2E9E6B"), title: "Activity Timeline") {
+                path.append(HubRoute.timeline)
+            }
+        }
+    }
+
     private var projectsGroup: some View {
         MoreGroup(title: "My Stuff") {
             MoreRow(icon: "camera.viewfinder", tint: Theme.brandBright, title: "Paint Defect Scanner") {
                 path.append(ScanRoute.scanner)
-            }
-            MoreDivider()
-            MoreRow(icon: "square.grid.2x2.fill", tint: Theme.brand, title: "My Projects") {
-                selectedTab = .vault
             }
             MoreDivider()
             MoreRow(icon: "doc.text.fill", tint: Color(hex: "5B5BD6"), title: "Saved Documents") {
@@ -225,7 +261,7 @@ struct MoreView: View {
     // MARK: Actions
 
     private func requestQuote() {
-        open(BusinessInfo.quoteMailto)
+        showEstimate = true
     }
 
     private func open(_ string: String) {

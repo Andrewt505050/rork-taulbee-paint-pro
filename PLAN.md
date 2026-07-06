@@ -45,6 +45,18 @@ A full design-system refresh across every screen for an App-Store-ready, premium
 - [x] Vision-first home refresh: compact brand header, "See your room in a new color" hero, Paint Project Path stepper, redesigned quick actions (incl. Request Estimate), premium activity empty state, and a custom bottom bar with a sliding pill highlight.
 - [x] Mockup-driven home upgrade: dedicated Home tab (Home, Visualize, Vault, Expert, More) with a lavender pill nav, a swipeable photo hero carousel (Visualizer / Scanner / Expert slides with real room photography and serif headlines), dotted Project Path steps with numbers, subtitles and a "How it works" sheet, icon-left quick action cards, a paintbrush-and-sparkles activity empty state, and a bell notifications sheet.
 
+## Homeowner Hub (latest)
+
+Retention layer that turns the app into a lead magnet, customer portal, project vault, and long-term care tool:
+
+- [x] Paint Vault upgrade: Rooms section with room cards (last painted, swatch dots, next reminder), new filter pills (All, Rooms, Scans, Visualizations, Docs, Quotes), "Never forget what color is on your walls again" header, and an Add First Room empty state.
+- [x] Room Profiles: name, type, photos with Before/After tags, current color + sheen, saved color ideas (brand library or manual entry), surface checklist, last painted date, condition / touch-up / contractor / warranty notes, attached reminders, and a Request Estimate for This Room CTA.
+- [x] Maintenance Reminders: Overdue / Due Soon / Upcoming / Completed sections, 14 categories, recurrence (monthly to every 3 years + custom), priorities, one-tap Recommended Care Schedule templates, local notifications (permission asked only at first reminder), and auto-rescheduling of recurring checks on completion.
+- [x] Activity Timeline: rooms, colors, reminders, estimates, and photos logged as events; merged with scans, visualizations, and expert questions on Home and in a full day-grouped Activity screen.
+- [x] Home integration: "Protect Your Paint" section (next reminder or Set a Reminder card) and a more useful empty state with Start Visualizing + Add Reminder.
+- [x] Lead capture: in-app Request Estimate form (name, contact, room, details, photos) replacing bare email links everywhere; soft prompts after scans (Request Inspection), after saving colors (Ask a Paint Expert), after creating a room (Want pricing?), and on overdue reminders (Want us to take a look?).
+- [x] More menu: Homeowner Hub group with Maintenance Reminders, Paint Vault, Saved Colors, Project Photos, and Activity Timeline.
+
 ## Note
 
-This completes all four features from your original vision plus the premium redesign.
+This completes all four features from your original vision, the premium redesign, and the Homeowner Hub retention layer.

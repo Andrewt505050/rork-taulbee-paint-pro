@@ -38,23 +38,25 @@ enum AppTab: String, CaseIterable, Identifiable, Hashable {
 }
 
 struct RootView: View {
-    @State private var selectedTab: AppTab = .home
+    @State private var router = AppRouter()
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
 
     var body: some View {
+        @Bindable var router = router
         ZStack {
-            pane(.home) { HomeTab(selectedTab: $selectedTab) }
+            pane(.home) { HomeTab(selectedTab: $router.selectedTab) }
             pane(.visualize) { VisionHomeView() }
             pane(.vault) { VaultHomeView() }
             pane(.expert) { ExpertChatView() }
-            pane(.more) { MoreView(selectedTab: $selectedTab) }
+            pane(.more) { MoreView(selectedTab: $router.selectedTab) }
         }
-        .animation(.easeInOut(duration: 0.16), value: selectedTab)
+        .animation(.easeInOut(duration: 0.16), value: router.selectedTab)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            TaulbeeTabBar(selected: $selectedTab)
+            TaulbeeTabBar(selected: $router.selectedTab)
         }
         .tint(Theme.brand)
         .preferredColorScheme(appearanceMode.colorScheme)
+        .environment(router)
     }
 
     /// Keeps every tab mounted so navigation & scroll state survive switching;
@@ -62,9 +64,9 @@ struct RootView: View {
     @ViewBuilder
     private func pane<Content: View>(_ tab: AppTab, @ViewBuilder content: () -> Content) -> some View {
         content()
-            .opacity(selectedTab == tab ? 1 : 0)
-            .allowsHitTesting(selectedTab == tab)
-            .accessibilityHidden(selectedTab != tab)
+            .opacity(router.selectedTab == tab ? 1 : 0)
+            .allowsHitTesting(router.selectedTab == tab)
+            .accessibilityHidden(router.selectedTab != tab)
     }
 }
 
@@ -84,6 +86,17 @@ struct HomeTab: View {
                 }
                 .navigationDestination(for: PaintScan.self) { scan in
                     ResultView(result: ScanResult(scan: scan))
+                }
+                .navigationDestination(for: HubRoute.self) { route in
+                    switch route {
+                    case .maintenance:
+                        MaintenanceView()
+                    case .timeline:
+                        ActivityTimelineView()
+                    }
+                }
+                .navigationDestination(for: PaintReminder.self) { reminder in
+                    ReminderDetailView(reminder: reminder)
                 }
         }
     }

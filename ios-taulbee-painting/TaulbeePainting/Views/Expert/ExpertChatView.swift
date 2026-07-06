@@ -12,6 +12,7 @@ import SwiftData
 
 struct ExpertChatView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppRouter.self) private var router
     @Query(sort: \ChatMessage.createdAt, order: .forward) private var messages: [ChatMessage]
 
     @State private var draft: String = ""
@@ -93,6 +94,10 @@ struct ExpertChatView: View {
             if let initialQuestion, messages.isEmpty {
                 send(text: initialQuestion)
             }
+            consumeRouterDraft(router.expertDraft)
+        }
+        .onChange(of: router.expertDraft) { _, newValue in
+            consumeRouterDraft(newValue)
         }
     }
 
@@ -300,6 +305,18 @@ struct ExpertChatView: View {
     private func ask(_ question: String) {
         path = NavigationPath()
         send(text: question)
+    }
+
+    /// Picks up a question drafted elsewhere in the app (rooms, reminders,
+    /// saved colors) into the input field, ready to review and send.
+    private func consumeRouterDraft(_ text: String?) {
+        guard let text, !text.isEmpty else { return }
+        draft = text
+        router.expertDraft = nil
+        Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            inputFocused = true
+        }
     }
 
     private func clearAll() {

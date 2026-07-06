@@ -14,6 +14,7 @@ struct SavedProjectView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppRouter.self) private var router
 
     @State private var showShare = false
     @State private var confirmDelete = false
@@ -53,6 +54,10 @@ struct SavedProjectView: View {
                     saveColorToVault()
                 }
                 .disabled(savedToVault)
+                if savedToVault {
+                    expertPrompt
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
                 PrimaryButton(title: "Delete Project", systemImage: "trash", fill: false) {
                     confirmDelete = true
                 }
@@ -106,6 +111,49 @@ struct SavedProjectView: View {
         .paintCard()
     }
 
+    private var expertPrompt: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "bubble.left.and.text.bubble.right.fill")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.brand)
+                .frame(width: 40, height: 40)
+                .background(Theme.lavender, in: .circle)
+            VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Need help choosing the final color?")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Theme.ink)
+                    Text("Our Paint Expert can compare options and finishes for your space.")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Button {
+                    Haptics.tap()
+                    askExpert()
+                } label: {
+                    Text("Ask a Paint Expert")
+                        .font(.system(size: 13.5, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .frame(height: 36)
+                        .background(Theme.brandGradient, in: .capsule)
+                }
+                .buttonStyle(ScaleButtonStyle())
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .paintCard(padding: 16)
+    }
+
+    private func askExpert() {
+        var colorLabel = project.colorName
+        if !project.colorBrand.isEmpty {
+            colorLabel += " (\(project.colorBrand) \(project.colorCode))"
+        }
+        router.askExpert("I'm considering \(colorLabel) for my \(project.surfaceLabel.lowercased()). Is it a good choice, and what should I compare it with?")
+    }
+
     /// Stores this project's color as a paint-color record in the Vault.
     private func saveColorToVault() {
         guard !savedToVault else { return }
@@ -122,6 +170,8 @@ struct SavedProjectView: View {
             colorBrand: project.colorBrand
         )
         modelContext.insert(record)
+        ActivityEvent.log(.colorSaved, title: "\(project.colorName) saved to Vault", in: modelContext)
+        try? modelContext.save()
         Haptics.success()
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
             savedToVault = true

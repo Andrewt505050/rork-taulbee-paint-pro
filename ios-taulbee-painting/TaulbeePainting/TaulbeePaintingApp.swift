@@ -17,6 +17,11 @@ struct TaulbeePaintingApp: App {
             HomeRecord.self,
             RecordAttachment.self,
             ChatMessage.self,
+            PaintRoom.self,
+            RoomPhoto.self,
+            SavedColor.self,
+            PaintReminder.self,
+            ActivityEvent.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

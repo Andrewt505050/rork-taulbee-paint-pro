@@ -18,10 +18,13 @@ struct DashboardView: View {
     @Query(sort: \PaintScan.createdAt, order: .reverse) private var scans: [PaintScan]
     @Query(sort: \VisionProject.createdAt, order: .reverse) private var projects: [VisionProject]
     @Query(sort: \ChatMessage.createdAt, order: .reverse) private var messages: [ChatMessage]
+    @Query(sort: \PaintReminder.dueDate) private var reminders: [PaintReminder]
+    @Query(sort: \ActivityEvent.createdAt, order: .reverse) private var events: [ActivityEvent]
 
     @AppStorage("homeNoticesSeen") private var noticesSeen = false
     @State private var showNotifications = false
     @State private var showHowItWorks = false
+    @State private var showEstimate = false
 
     // Hero carousel state
     @State private var heroID: Int? = 0
@@ -41,6 +44,9 @@ struct DashboardView: View {
         items += messages.filter { $0.role == .user }.prefix(6).map {
             ActivityItem(id: "chat-\($0.id)", title: $0.text, date: $0.createdAt, kind: .expert, scan: nil)
         }
+        items += events.prefix(8).map {
+            ActivityItem(id: "event-\($0.id)", title: $0.title, date: $0.createdAt, kind: ActivityKind(eventType: $0.type), scan: nil)
+        }
         return Array(items.sorted { $0.date > $1.date }.prefix(5))
     }
 
@@ -51,6 +57,7 @@ struct DashboardView: View {
                 heroCarousel
                 projectPath
                 quickActions
+                protectSection
                 activitySection
             }
             .padding(.horizontal, 16)
@@ -66,7 +73,10 @@ struct DashboardView: View {
                     showNotifications = false
                     selectedTab = .visualize
                 },
-                onQuote: { requestQuote() }
+                onQuote: {
+                    showNotifications = false
+                    requestQuote()
+                }
             )
         }
         .sheet(isPresented: $showHowItWorks) {
@@ -74,6 +84,9 @@ struct DashboardView: View {
                 showHowItWorks = false
                 selectedTab = .visualize
             }
+        }
+        .sheet(isPresented: $showEstimate) {
+            RequestEstimateView()
         }
         .onReceive(heroTimer) { _ in
             guard selectedTab == .home, !heroInteracted, !showNotifications, !showHowItWorks else { return }
@@ -316,6 +329,103 @@ struct DashboardView: View {
         }
     }
 
+    // MARK: Protect your paint
+
+    private var nextReminder: PaintReminder? {
+        reminders.first { $0.completedAt == nil }
+    }
+
+    private var protectSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            sectionTitle("Protect Your Paint")
+            if let reminder = nextReminder {
+                Button {
+                    Haptics.tap()
+                    path.append(HubRoute.maintenance)
+                } label: {
+                    VStack(alignment: .leading, spacing: 13) {
+                        HStack(spacing: 13) {
+                            Image(systemName: reminder.category.systemImage)
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(reminder.category.tint)
+                                .frame(width: 44, height: 44)
+                                .background(reminder.category.tint.opacity(0.12), in: .rect(cornerRadius: 14))
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(reminder.title)
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundStyle(Theme.ink)
+                                    .lineLimit(1)
+                                Text([reminder.dueText, reminder.whereText].filter { !$0.isEmpty }.joined(separator: " · "))
+                                    .font(.system(size: 12.5, weight: .medium))
+                                    .foregroundStyle(Theme.inkSecondary)
+                                    .lineLimit(1)
+                            }
+                            Spacer(minLength: 6)
+                            HStack(spacing: 4) {
+                                Image(systemName: reminder.status.systemImage)
+                                    .font(.system(size: 9, weight: .bold))
+                                Text(reminder.status.label)
+                                    .font(.system(size: 10.5, weight: .heavy))
+                            }
+                            .foregroundStyle(reminder.status.tint)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 5)
+                            .background(reminder.status.tint.opacity(0.12), in: .capsule)
+                        }
+                        HStack(spacing: 5) {
+                            Text("View Reminders")
+                                .font(.system(size: 13.5, weight: .bold))
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .bold))
+                        }
+                        .foregroundStyle(Theme.brand)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(ScaleButtonStyle(scale: 0.98))
+                .paintCard(padding: 16, radius: 24)
+            } else {
+                VStack(alignment: .leading, spacing: 13) {
+                    HStack(alignment: .top, spacing: 13) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Theme.brand)
+                            .frame(width: 44, height: 44)
+                            .background(Theme.lavender, in: .rect(cornerRadius: 14))
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Stay ahead of touch-ups")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundStyle(Theme.ink)
+                            Text("Set reminders for exterior checks, caulk, touch-ups, and seasonal maintenance.")
+                                .font(.system(size: 12.5, weight: .medium))
+                                .foregroundStyle(Theme.inkSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    Button {
+                        Haptics.tap()
+                        path.append(HubRoute.maintenance)
+                    } label: {
+                        HStack(spacing: 7) {
+                            Image(systemName: "bell.badge.fill")
+                                .font(.system(size: 13, weight: .bold))
+                            Text("Set a Reminder")
+                                .font(.system(size: 14, weight: .bold))
+                        }
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(Theme.brandGradient, in: .rect(cornerRadius: 14))
+                        .shadow(color: Theme.brand.opacity(0.25), radius: 10, y: 5)
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                }
+                .paintCard(padding: 16, radius: 24)
+            }
+        }
+    }
+
     // MARK: Activity
 
     private var activitySection: some View {
@@ -326,7 +436,7 @@ struct DashboardView: View {
                 if !activity.isEmpty {
                     Button {
                         Haptics.tap()
-                        selectedTab = .vault
+                        path.append(HubRoute.timeline)
                     } label: {
                         Text("See All")
                             .font(.system(size: 13, weight: .bold))
@@ -380,32 +490,51 @@ struct DashboardView: View {
                     .offset(x: 42, y: 20)
             }
             VStack(spacing: 5) {
-                Text("No activity yet")
+                Text("No saved projects yet")
                     .font(.system(size: 16, weight: .heavy))
                     .foregroundStyle(Theme.ink)
-                Text("Start by scanning a defect, visualizing a room, or asking an expert.")
+                Text("Start by visualizing a room, saving a color, or adding a maintenance reminder.")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Theme.inkSecondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Button {
-                Haptics.tap()
-                selectedTab = .visualize
-            } label: {
-                HStack(spacing: 7) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 13, weight: .bold))
-                    Text("Create First Project")
-                        .font(.system(size: 14, weight: .bold))
+            HStack(spacing: 10) {
+                Button {
+                    Haptics.tap()
+                    selectedTab = .visualize
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("Start Visualizing")
+                            .font(.system(size: 13.5, weight: .bold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .frame(height: 42)
+                    .background(Theme.brandGradient, in: .capsule)
+                    .shadow(color: Theme.brand.opacity(0.25), radius: 10, y: 5)
                 }
-                .foregroundStyle(.white)
-                .padding(.horizontal, 20)
-                .frame(height: 42)
-                .background(Theme.brandGradient, in: .capsule)
-                .shadow(color: Theme.brand.opacity(0.25), radius: 10, y: 5)
+                .buttonStyle(ScaleButtonStyle())
+
+                Button {
+                    Haptics.tap()
+                    path.append(HubRoute.maintenance)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "bell.badge.fill")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("Add Reminder")
+                            .font(.system(size: 13.5, weight: .bold))
+                    }
+                    .foregroundStyle(Theme.brand)
+                    .padding(.horizontal, 16)
+                    .frame(height: 42)
+                    .background(Theme.lavender, in: .capsule)
+                }
+                .buttonStyle(ScaleButtonStyle())
             }
-            .buttonStyle(ScaleButtonStyle())
             .padding(.top, 2)
         }
         .frame(maxWidth: .infinity)
@@ -420,6 +549,12 @@ struct DashboardView: View {
             selectedTab = .visualize
         case .expert:
             selectedTab = .expert
+        case .room, .color, .photo:
+            selectedTab = .vault
+        case .reminder, .reminderDone:
+            path.append(HubRoute.maintenance)
+        case .estimate:
+            showEstimate = true
         }
     }
 
@@ -432,8 +567,7 @@ struct DashboardView: View {
     }
 
     private func requestQuote() {
-        guard let url = URL(string: BusinessInfo.quoteMailto) else { return }
-        UIApplication.shared.open(url)
+        showEstimate = true
     }
 }
 
@@ -468,12 +602,30 @@ struct ActivityItem: Identifiable {
 
 enum ActivityKind {
     case defect, vision, expert
+    case room, color, reminder, reminderDone, estimate, photo
+
+    init(eventType: ActivityEventType) {
+        switch eventType {
+        case .roomCreated: self = .room
+        case .colorSaved: self = .color
+        case .reminderCreated: self = .reminder
+        case .reminderCompleted: self = .reminderDone
+        case .estimateRequested: self = .estimate
+        case .photoAdded: self = .photo
+        }
+    }
 
     var icon: String {
         switch self {
         case .defect: "camera.viewfinder"
         case .vision: "wand.and.stars"
         case .expert: "bubble.left.and.text.bubble.right.fill"
+        case .room: "door.left.hand.open"
+        case .color: "paintpalette.fill"
+        case .reminder: "bell.badge.fill"
+        case .reminderDone: "checkmark.circle.fill"
+        case .estimate: "envelope.fill"
+        case .photo: "photo.fill"
         }
     }
 
@@ -482,6 +634,12 @@ enum ActivityKind {
         case .defect: "Defect"
         case .vision: "Vision"
         case .expert: "Expert"
+        case .room: "Room"
+        case .color: "Color"
+        case .reminder: "Reminder"
+        case .reminderDone: "Done"
+        case .estimate: "Estimate"
+        case .photo: "Photo"
         }
     }
 
@@ -490,6 +648,12 @@ enum ActivityKind {
         case .defect: Theme.brand
         case .vision: Theme.brandBright
         case .expert: Theme.lavenderAccent
+        case .room: Theme.brand
+        case .color: Theme.lavenderAccent
+        case .reminder: Theme.accent
+        case .reminderDone: Color(hex: "2E9E6B")
+        case .estimate: Theme.brandBright
+        case .photo: Color(hex: "3B82A0")
         }
     }
 }
