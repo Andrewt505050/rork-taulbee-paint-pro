@@ -1,0 +1,10 @@
+{
+  "apps": [
+    {
+      "name": "Taulbee Painting",
+      "path": "ios-taulbee-painting",
+      "framework": "swift"
+    }
+  ],
+  "$schema": "https://rork.com/schema/rork.json"
+}
