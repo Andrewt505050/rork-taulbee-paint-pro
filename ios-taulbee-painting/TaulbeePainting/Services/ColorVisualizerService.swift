@@ -72,6 +72,38 @@ nonisolated enum PaintTarget: String, CaseIterable, Identifiable {
         case .cabinets: "only the cabinet doors, drawer fronts and cabinet frames"
         }
     }
+
+    /// Compact name for the surface chips on the live canvas.
+    var shortLabel: String {
+        switch self {
+        case .interiorWalls: "Walls"
+        case .exteriorSiding: "Siding"
+        case .trim: "Trim"
+        case .frontDoor: "Door"
+        case .cabinets: "Cabinets"
+        }
+    }
+
+    /// Layering order when several surfaces are painted together — higher
+    /// values paint over lower ones, the way a real job cuts trim and doors
+    /// in over walls.
+    var zOrder: Int {
+        switch self {
+        case .interiorWalls: 0
+        case .exteriorSiding: 1
+        case .cabinets: 2
+        case .trim: 3
+        case .frontDoor: 4
+        }
+    }
+}
+
+/// One surface plus the paint color assigned to it in a scheme.
+nonisolated struct SurfacePaint: Identifiable, Hashable {
+    let target: PaintTarget
+    let color: PaintColor
+
+    var id: String { target.rawValue }
 }
 
 nonisolated struct ColorVisualizerService {
@@ -81,7 +113,10 @@ nonisolated struct ColorVisualizerService {
     private var baseURL: String { Config.EXPO_PUBLIC_TOOLKIT_URL }
     private var secret: String { Config.EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY }
 
-    func repaint(image: UIImage, color: PaintColor, target: PaintTarget) async throws -> UIImage {
+    /// Repaints one or more surfaces — each with its own color — in a single
+    /// photorealistic pass.
+    func repaint(image: UIImage, plan: [SurfacePaint]) async throws -> UIImage {
+        guard !plan.isEmpty else { throw VisualizerError.noImageReturned }
         guard !baseURL.isEmpty, !secret.isEmpty else { throw VisualizerError.notConfigured }
         guard let jpeg = ImageResizer.jpegUnderBudget(image) else { throw VisualizerError.imageTooLarge }
 
@@ -89,14 +124,24 @@ nonisolated struct ColorVisualizerService {
         let dataURI = "data:image/jpeg;base64,\(base64)"
         let url = URL(string: "\(baseURL)/v2/vercel/v1/chat/completions")!
 
+        let ordered = plan.sorted { $0.target.zOrder < $1.target.zOrder }
+        let assignments = ordered
+            .map { paint in
+                "- \(paint.target.promptPhrase): paint with \"\(paint.color.name)\" " +
+                "(\(paint.color.brand.displayName) \(paint.color.code)), approximately hex #\(paint.color.hex)"
+            }
+            .joined(separator: "\n")
+        let phrases = ordered.map { $0.target.promptPhrase }.joined(separator: "; ")
+
         let prompt = """
-        Repaint \(target.promptPhrase) in this photo with the paint color \
-        "\(color.name)" (\(color.brand.displayName) \(color.code)), which is approximately \
-        the color hex #\(color.hex). Apply the new color realistically, following the existing \
-        lighting, shadows, highlights, surface texture and perspective so it looks like a real \
-        professional paint job. Keep everything else exactly the same — do not change furniture, \
-        flooring, ceilings, windows, glass, hardware, plants, sky, landscaping, people, or any \
-        objects that are not \(target.promptPhrase). Produce a clean, photorealistic result at \
+        Repaint the following surfaces in this photo, each with its own specified paint color:
+        \(assignments)
+        Apply every color realistically, following the existing lighting, shadows, highlights, \
+        surface texture and perspective so it looks like a real professional paint job. Where two \
+        repainted surfaces meet, keep the edges crisp and clean, as if walls, trim and doors were \
+        cut in separately by a professional painter. Keep everything else exactly the same — do \
+        not change furniture, flooring, windows, glass, hardware, plants, sky, landscaping, \
+        people, or any surface other than: \(phrases). Produce a clean, photorealistic result at \
         the same composition and framing as the original photo.
         """
 

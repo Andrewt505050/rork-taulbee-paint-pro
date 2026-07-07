@@ -157,10 +157,10 @@ struct VisualizeView: View {
             let base = ImageResizer.normalizedUpright(image)
             var engine: RecolorEngine?
             do {
+                let built = try RecolorEngine(photo: base)
                 let mask = try await maskService.detectSurface(in: base, target: target)
-                engine = try await Task.detached(priority: .userInitiated) {
-                    try RecolorEngine(photo: base, mask: mask)
-                }.value
+                try await built.addSurface(target, mask: mask)
+                engine = built
                 Haptics.success()
             } catch {
                 // Quiet fallback: the canvas will use classic AI renders instead.

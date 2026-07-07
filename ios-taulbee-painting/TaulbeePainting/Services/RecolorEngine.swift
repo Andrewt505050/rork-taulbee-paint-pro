@@ -2,10 +2,12 @@
 //  RecolorEngine.swift
 //  TaulbeePainting
 //
-//  On-device instant recoloring. Prepared once per photo + detected surface
-//  mask, it composites any paint color onto the surface while preserving the
-//  photo's real lighting, shadows, and texture. Runs on the GPU via Core
-//  Image, so trying a new color is immediate and free.
+//  On-device instant recoloring for one photo and any number of detected
+//  surfaces. Each surface is prepared once from its AI-detected mask; the
+//  engine then composites any combination of paint colors — layered in
+//  real-job order (trim and doors over walls) — while preserving the photo's
+//  lighting, shadows, and texture. Runs on the GPU via Core Image, so trying
+//  a new color is immediate and free.
 //
 
 import UIKit
@@ -18,33 +20,44 @@ nonisolated enum RecolorError: Error {
     case maskUnusable
 }
 
-/// GPU recoloring pipeline for one photo + one detected surface.
+/// GPU recoloring pipeline for one photo + its detected surfaces.
 actor RecolorEngine {
+    /// Everything needed to repaint one detected surface.
+    private struct SurfaceLayer {
+        let featheredMask: CIImage
+        let shading: CIImage
+    }
+
     private let context: CIContext
     private let original: CIImage
-    private let featheredMask: CIImage
-    private let shading: CIImage
+    private let luma: CIImage
     private let extent: CGRect
+    private var layers: [PaintTarget: SurfaceLayer] = [:]
 
-    /// Fraction of the photo covered by the detected surface (0...1).
-    let coverage: Double
-
-    /// Builds the pipeline from an upright photo and the AI-detected mask.
-    /// Heavier than a render (two GPU reductions), so create it off the main
-    /// thread via `Task.detached`.
-    init(photo: UIImage, mask: UIImage) throws {
-        guard let photoCG = photo.cgImage, let maskCG = mask.cgImage else {
+    /// Builds the shared pipeline from an upright photo. Surfaces are added
+    /// individually via `addSurface` as their masks are detected.
+    init(photo: UIImage) throws {
+        guard let photoCG = photo.cgImage else {
             throw RecolorError.invalidImage
         }
 
         let srgb = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
-        let context = CIContext(options: [
+        context = CIContext(options: [
             .workingColorSpace: srgb,
             .outputColorSpace: srgb
         ])
 
         let base = CIImage(cgImage: photoCG)
-        let extent = base.extent
+        original = base
+        extent = base.extent
+        // Luminance-only photo: keeps lighting, shadows, and texture.
+        luma = Self.grayscale(of: base)
+    }
+
+    /// Prepares a detected surface for instant recoloring. Heavier than a
+    /// render (two GPU reductions), so it runs on the actor's executor.
+    func addSurface(_ target: PaintTarget, mask: UIImage) throws {
+        guard let maskCG = mask.cgImage else { throw RecolorError.invalidImage }
 
         // Stretch the AI mask to cover the photo exactly.
         let rawMask = CIImage(cgImage: maskCG)
@@ -67,9 +80,6 @@ actor RecolorEngine {
         // Reject masks that found (almost) nothing.
         let coverage = Self.averageValue(of: binaryMask, extent: extent, context: context)
         guard coverage > 0.02 else { throw RecolorError.maskUnusable }
-
-        // Luminance-only photo: keeps lighting, shadows, and texture.
-        let luma = Self.grayscale(of: base)
 
         // Average brightness of the surface itself, so the chosen paint reads
         // true at the room's typical lighting level.
@@ -98,39 +108,48 @@ actor RecolorEngine {
         blur.radius = Float(max(1.2, min(extent.width, extent.height) / 420))
         let feathered = blur.outputImage?.cropped(to: extent) ?? binaryMask
 
-        self.context = context
-        self.original = base
-        self.featheredMask = feathered
-        self.shading = shading
-        self.extent = extent
-        self.coverage = coverage
+        layers[target] = SurfaceLayer(featheredMask: feathered, shading: shading)
     }
 
-    /// Repaints the detected surface with the given swatch hex. Fast enough
-    /// to call on every color tap.
-    func render(hex: String) -> UIImage? {
-        let rgb = PaintColor.rgb(from: hex)
+    /// Repaints every assigned surface (target → swatch hex) in one pass,
+    /// layered by `zOrder` so trim and doors paint over walls. Fast enough to
+    /// call on every color tap.
+    func render(_ assignments: [PaintTarget: String]) -> UIImage? {
+        let ordered = assignments.keys
+            .filter { layers[$0] != nil }
+            .sorted { $0.zOrder < $1.zOrder }
+        guard !ordered.isEmpty else { return nil }
+
         let srgb = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
-        let ciColor = CIColor(
-            red: CGFloat(rgb.r),
-            green: CGFloat(rgb.g),
-            blue: CGFloat(rgb.b),
-            colorSpace: srgb
-        ) ?? CIColor(red: CGFloat(rgb.r), green: CGFloat(rgb.g), blue: CGFloat(rgb.b))
-        let flat = CIImage(color: ciColor).cropped(to: extent)
+        var accumulated = original
 
-        // Overlay keeps highlights and shadows while adopting the paint color.
-        let overlay = CIFilter.overlayBlendMode()
-        overlay.inputImage = flat
-        overlay.backgroundImage = shading
-        guard let painted = overlay.outputImage else { return nil }
+        for target in ordered {
+            guard let layer = layers[target], let hex = assignments[target] else { continue }
 
-        let composite = CIFilter.blendWithMask()
-        composite.inputImage = painted
-        composite.backgroundImage = original
-        composite.maskImage = featheredMask
-        guard let output = composite.outputImage,
-              let cgImage = context.createCGImage(output, from: extent) else {
+            let rgb = PaintColor.rgb(from: hex)
+            let ciColor = CIColor(
+                red: CGFloat(rgb.r),
+                green: CGFloat(rgb.g),
+                blue: CGFloat(rgb.b),
+                colorSpace: srgb
+            ) ?? CIColor(red: CGFloat(rgb.r), green: CGFloat(rgb.g), blue: CGFloat(rgb.b))
+            let flat = CIImage(color: ciColor).cropped(to: extent)
+
+            // Overlay keeps highlights and shadows while adopting the paint color.
+            let overlay = CIFilter.overlayBlendMode()
+            overlay.inputImage = flat
+            overlay.backgroundImage = layer.shading
+            guard let painted = overlay.outputImage else { continue }
+
+            let composite = CIFilter.blendWithMask()
+            composite.inputImage = painted
+            composite.backgroundImage = accumulated
+            composite.maskImage = layer.featheredMask
+            guard let output = composite.outputImage else { continue }
+            accumulated = output
+        }
+
+        guard let cgImage = context.createCGImage(accumulated, from: extent) else {
             return nil
         }
         return UIImage(cgImage: cgImage)

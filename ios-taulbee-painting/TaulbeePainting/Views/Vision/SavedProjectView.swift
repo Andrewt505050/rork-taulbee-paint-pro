@@ -2,8 +2,8 @@
 //  SavedProjectView.swift
 //  TaulbeePainting
 //
-//  Detail view for a saved Vision project with before/after, color details,
-//  re-share, and delete.
+//  Detail view for a saved Vision project with before/after, the full color
+//  scheme (one card per painted surface), re-share, and delete.
 //
 
 import SwiftUI
@@ -39,7 +39,7 @@ struct SavedProjectView: View {
                         .clipShape(.rect(cornerRadius: Theme.cardRadius))
                 }
 
-                colorCard
+                schemeSection
                 if !project.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     notesCard
                 }
@@ -47,7 +47,9 @@ struct SavedProjectView: View {
                     showShare = true
                 }
                 PrimaryButton(
-                    title: savedToVault ? "Saved to Vault" : "Save Color to Vault",
+                    title: savedToVault
+                        ? "Saved to Vault"
+                        : (project.scheme.count > 1 ? "Save Colors to Vault" : "Save Color to Vault"),
                     systemImage: savedToVault ? "checkmark.circle.fill" : "lock.shield.fill",
                     fill: false
                 ) {
@@ -81,17 +83,30 @@ struct SavedProjectView: View {
         }
     }
 
-    private var colorCard: some View {
+    private var schemeSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if project.scheme.count > 1 {
+                SectionLabel(icon: "paintpalette.fill", title: "Color Scheme")
+            }
+            VStack(spacing: 12) {
+                ForEach(project.scheme, id: \.self) { paint in
+                    schemeCard(paint)
+                }
+            }
+        }
+    }
+
+    private func schemeCard(_ paint: SavedSurfacePaint) -> some View {
         HStack(spacing: 14) {
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(hex: project.colorHex.isEmpty ? "CCCCCC" : project.colorHex))
+                .fill(Color(hex: paint.colorHex.isEmpty ? "CCCCCC" : paint.colorHex))
                 .frame(width: 52, height: 52)
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.hairline, lineWidth: 1))
             VStack(alignment: .leading, spacing: 3) {
-                Text(project.colorName)
+                Text(paint.colorName)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(Theme.ink)
-                Text(detailLine)
+                Text(detailLine(for: paint))
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(Theme.inkSecondary)
             }
@@ -147,30 +162,44 @@ struct SavedProjectView: View {
     }
 
     private func askExpert() {
-        var colorLabel = project.colorName
-        if !project.colorBrand.isEmpty {
-            colorLabel += " (\(project.colorBrand) \(project.colorCode))"
-        }
-        router.askExpert("I'm considering \(colorLabel) for my \(project.surfaceLabel.lowercased()). Is it a good choice, and what should I compare it with?")
+        let scheme = project.scheme
+        let described = scheme.map { paint in
+            var label = paint.colorName
+            if !paint.colorBrand.isEmpty {
+                label += " (\(paint.colorBrand) \(paint.colorCode))"
+            }
+            return "\(label) for my \(paint.surfaceLabel.lowercased())"
+        }.joined(separator: ", ")
+        let question = scheme.count > 1
+            ? "Is this a good combination, and what should I compare it with?"
+            : "Is it a good choice, and what should I compare it with?"
+        router.askExpert("I'm considering \(described). \(question)")
     }
 
-    /// Stores this project's color as a paint-color record in the Vault.
+    /// Stores every color in this project's scheme as paint-color records in
+    /// the Vault.
     private func saveColorToVault() {
         guard !savedToVault else { return }
-        var notes = "From a Vision project on \(project.surfaceLabel.lowercased())."
-        if !project.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            notes += "\n\n\(project.notes)"
+        let scheme = project.scheme
+        for paint in scheme {
+            var notes = "From a Vision project on \(paint.surfaceLabel.lowercased())."
+            if !project.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                notes += "\n\n\(project.notes)"
+            }
+            let record = HomeRecord(
+                title: paint.colorName,
+                category: .paintColor,
+                notes: notes,
+                colorHex: paint.colorHex,
+                colorCode: paint.colorCode,
+                colorBrand: paint.colorBrand
+            )
+            modelContext.insert(record)
         }
-        let record = HomeRecord(
-            title: project.colorName,
-            category: .paintColor,
-            notes: notes,
-            colorHex: project.colorHex,
-            colorCode: project.colorCode,
-            colorBrand: project.colorBrand
-        )
-        modelContext.insert(record)
-        ActivityEvent.log(.colorSaved, title: "\(project.colorName) saved to Vault", in: modelContext)
+        let eventTitle = scheme.count > 1
+            ? "\(scheme.count) colors saved to Vault"
+            : "\(project.colorName) saved to Vault"
+        ActivityEvent.log(.colorSaved, title: eventTitle, in: modelContext)
         try? modelContext.save()
         Haptics.success()
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -178,19 +207,29 @@ struct SavedProjectView: View {
         }
     }
 
-    private var detailLine: String {
+    private func detailLine(for paint: SavedSurfacePaint) -> String {
         var parts: [String] = []
-        if !project.colorBrand.isEmpty { parts.append(project.colorBrand) }
-        if !project.colorCode.isEmpty { parts.append(project.colorCode) }
-        parts.append(project.surfaceLabel)
+        if !paint.colorBrand.isEmpty { parts.append(paint.colorBrand) }
+        if !paint.colorCode.isEmpty { parts.append(paint.colorCode) }
+        if !paint.surfaceLabel.isEmpty { parts.append(paint.surfaceLabel) }
         return parts.joined(separator: " · ")
     }
 
     private var shareItems: [Any] {
         var text = "Taulbee Painting — Vision Tool project\n"
-        text += "Color: \(project.colorName)"
-        if !project.colorBrand.isEmpty { text += " (\(project.colorBrand) \(project.colorCode))" }
-        text += "\nSurface: \(project.surfaceLabel)\n"
+        let scheme = project.scheme
+        if scheme.count == 1, let paint = scheme.first {
+            text += "Color: \(paint.colorName)"
+            if !paint.colorBrand.isEmpty { text += " (\(paint.colorBrand) \(paint.colorCode))" }
+            text += "\nSurface: \(paint.surfaceLabel)\n"
+        } else {
+            text += "Color scheme:\n"
+            for paint in scheme {
+                text += "• \(paint.surfaceLabel): \(paint.colorName)"
+                if !paint.colorBrand.isEmpty { text += " (\(paint.colorBrand) \(paint.colorCode))" }
+                text += "\n"
+            }
+        }
         if !project.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             text += "Notes: \(project.notes)\n"
         }

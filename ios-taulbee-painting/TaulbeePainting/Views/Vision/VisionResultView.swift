@@ -2,8 +2,9 @@
 //  VisionResultView.swift
 //  TaulbeePainting
 //
-//  Shows the before/after reveal, color details, and lets the customer save
-//  the project and send it to Taulbee Painting.
+//  Shows the before/after reveal and the complete color scheme — one card per
+//  painted surface — and lets the customer save the project and send it to
+//  Taulbee Painting.
 //
 
 import SwiftUI
@@ -12,8 +13,7 @@ import SwiftData
 struct VisionResultView: View {
     let original: UIImage
     let result: UIImage
-    let color: PaintColor?
-    let target: PaintTarget
+    let paints: [SurfacePaint]
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -32,7 +32,7 @@ struct VisionResultView: View {
                     .shadow(color: .black.opacity(0.08), radius: 16, y: 8)
 
                 hint
-                if let color { colorCard(color) }
+                if !paints.isEmpty { schemeSection }
                 notesCard
                 actions
                 Color.clear.frame(height: 12)
@@ -55,28 +55,42 @@ struct VisionResultView: View {
             .frame(maxWidth: .infinity)
     }
 
-    private func colorCard(_ color: PaintColor) -> some View {
+    private var schemeSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if paints.count > 1 {
+                SectionLabel(icon: "paintpalette.fill", title: "Your Color Scheme")
+            }
+            VStack(spacing: 12) {
+                ForEach(paints) { paint in
+                    colorCard(paint)
+                }
+            }
+        }
+    }
+
+    private func colorCard(_ paint: SurfacePaint) -> some View {
         HStack(spacing: 14) {
             RoundedRectangle(cornerRadius: 12)
-                .fill(color.color)
+                .fill(paint.color.color)
                 .frame(width: 52, height: 52)
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.hairline, lineWidth: 1))
             VStack(alignment: .leading, spacing: 3) {
-                Text(color.name)
+                Text(paint.color.name)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(Theme.ink)
-                Text("\(color.brand.displayName) · \(color.code) · #\(color.hex)")
+                Text("\(paint.color.brand.displayName) · \(paint.color.code) · #\(paint.color.hex)")
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(Theme.inkSecondary)
             }
             Spacer()
             VStack(spacing: 4) {
-                Image(systemName: target.systemImage)
+                Image(systemName: paint.target.systemImage)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Theme.brand)
-                Text(target.label)
+                Text(paint.target.label)
                     .font(.system(size: 10.5, weight: .semibold))
                     .foregroundStyle(Theme.inkSecondary)
+                    .multilineTextAlignment(.center)
             }
         }
         .paintCard()
@@ -109,10 +123,15 @@ struct VisionResultView: View {
 
     private var shareItems: [Any] {
         var text = "Taulbee Painting — Vision Tool project\n"
-        if let color {
-            text += "Color: \(color.name) (\(color.brand.displayName) \(color.code), #\(color.hex))\n"
+        if paints.count == 1, let paint = paints.first {
+            text += "Color: \(paint.color.name) (\(paint.color.brand.displayName) \(paint.color.code), #\(paint.color.hex))\n"
+            text += "Surface: \(paint.target.label)\n"
+        } else {
+            text += "Color scheme:\n"
+            for paint in paints {
+                text += "• \(paint.target.label): \(paint.color.name) (\(paint.color.brand.displayName) \(paint.color.code), #\(paint.color.hex))\n"
+            }
         }
-        text += "Surface: \(target.label)\n"
         if !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             text += "Notes: \(notes)\n"
         }
@@ -121,16 +140,26 @@ struct VisionResultView: View {
     }
 
     private func save() {
-        guard !saved else { return }
+        guard !saved, let first = paints.first else { return }
+        let scheme = paints.map { paint in
+            SavedSurfacePaint(
+                surfaceLabel: paint.target.label,
+                colorName: paint.color.name,
+                colorCode: paint.color.code,
+                colorBrand: paint.color.brand.displayName,
+                colorHex: paint.color.hex
+            )
+        }
         let project = VisionProject(
             originalImageData: ImageResizer.storageJPEG(original),
             resultImageData: ImageResizer.storageJPEG(result),
-            colorName: color?.name ?? "Custom",
-            colorCode: color?.code ?? "",
-            colorBrand: color?.brand.displayName ?? "",
-            colorHex: color?.hex ?? "",
-            surfaceLabel: target.label,
-            notes: notes
+            colorName: first.color.name,
+            colorCode: first.color.code,
+            colorBrand: first.color.brand.displayName,
+            colorHex: first.color.hex,
+            surfaceLabel: paints.map { $0.target.label }.joined(separator: " + "),
+            notes: notes,
+            schemeData: try? JSONEncoder().encode(scheme)
         )
         modelContext.insert(project)
         Haptics.success()

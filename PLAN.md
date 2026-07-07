@@ -63,12 +63,23 @@ The visualizer is now a real product: instant wall painting with the complete co
 
 - [x] Complete color catalogs bundled in-app: 7,734 real colors (1,526 Sherwin-Williams, 4,118 Benjamin Moore, 2,090 PPG) with true names, product codes, and swatches — browsable offline.
 - [x] One-time AI surface detection per photo + surface (walls, siding, trim, door, cabinets), then unlimited instant on-device recolors that keep the room's real lighting, shadows, and texture (no per-color AI cost).
-- [x] Live Paint canvas: full-bleed photo, swipeable bottom color strip with Popular bestsellers + recent library picks, current-color chip, hold-to-compare with the original, and surface switching from the toolbar.
+- [x] Live Paint canvas: full-bleed photo, swipeable bottom color strip with Popular bestsellers + recent library picks, current-color chip, hold-to-compare with the original, and surface chips for switching.
 - [x] HD Render on demand — the photorealistic AI render is now an upgrade step for the color you love (cached per color/surface).
 - [x] Smart fallback: if detection can't find the surface, the canvas quietly switches to classic per-color AI renders.
 - [x] Color Library upgrade: Popular Picks shelf, search by name or code across all 7,700+ colors, brand + family filters; the Vault color picker uses the full books too.
 - [x] Saving, before/after slider, Ask an Expert, and Send to Taulbee all work with instant previews and HD renders.
 
+## Multi-surface painting (latest)
+
+Paint several surfaces in one photo at the same time — a complete color scheme in one preview:
+
+- [x] Surface chip row on the Live Paint canvas: each chip shows the surface name + a dot of its assigned color; a dashed "+ Add Surface" chip runs the one-time detection for walls, siding, trim, door, or cabinets.
+- [x] Layered instant previews: every painted surface renders together on-device, stacked in real-job order (trim and doors paint over walls); tap a color to apply it to the selected surface only.
+- [x] Clear a surface's color (Clear tile or long-press the chip) or remove a surface entirely; re-adding a detected surface is instant.
+- [x] Scheme legend on the photo listing every painted surface and color, plus hold-to-compare with the original.
+- [x] HD Render paints the whole scheme in one photorealistic AI pass (cached per exact scheme); classic fallback still works when detection can't find the first surface.
+- [x] Result page shows one color card per surface; saving keeps the full scheme (older single-color projects untouched); Send to Taulbee and saved-project sharing list every surface + color as a ready paint spec; Save to Vault stores every scheme color.
+
 ## Note
 
-This completes all four features from your original vision, the premium redesign, the Homeowner Hub retention layer, and the functional Vision Tool.
+This completes all four features from your original vision, the premium redesign, the Homeowner Hub retention layer, the functional Vision Tool, and multi-surface painting.
