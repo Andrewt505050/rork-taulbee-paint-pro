@@ -2,8 +2,9 @@
 //  VisualizeView.swift
 //  TaulbeePainting
 //
-//  Pick a target surface and color for a chosen photo, then generate a
-//  photorealistic repaint preview.
+//  Pick the surface to repaint, run the one-time AI surface detection, then
+//  jump into the live painting canvas. If detection can't find the surface,
+//  the canvas quietly falls back to classic AI renders.
 //
 
 import SwiftUI
@@ -12,13 +13,10 @@ struct VisualizeView: View {
     let image: UIImage
 
     @State private var target: PaintTarget = .interiorWalls
-    @State private var selectedColor: PaintColor?
-    @State private var showLibrary = false
-    @State private var isGenerating = false
-    @State private var result: UIImage?
-    @State private var errorMessage: String?
+    @State private var isDetecting = false
+    @State private var session: LivePaintSession?
 
-    private let service = ColorVisualizerService()
+    private let maskService = SurfaceMaskService()
 
     var body: some View {
         ZStack {
@@ -27,7 +25,7 @@ struct VisualizeView: View {
                 VStack(spacing: 20) {
                     photoCard
                     targetSection
-                    colorSection
+                    howItWorks
                     Color.clear.frame(height: 90)
                 }
                 .padding(.horizontal, 16)
@@ -36,33 +34,25 @@ struct VisualizeView: View {
 
             VStack {
                 Spacer()
-                generateBar
+                startBar
             }
 
-            if isGenerating {
-                PaintingOverlay(color: selectedColor?.color ?? Theme.brand)
-                    .transition(.opacity)
+            if isDetecting {
+                PaintingOverlay(
+                    color: Theme.brand,
+                    title: "Detecting \(target.label.lowercased())…",
+                    subtitle: "One-time setup — after this, colors apply instantly"
+                )
+                .transition(.opacity)
             }
         }
         .navigationTitle("Visualize")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showLibrary) {
-            ColorLibraryView { color in selectedColor = color }
+        .navigationDestination(item: $session) { session in
+            LivePaintView(session: session)
         }
-        .navigationDestination(item: $result) { rendered in
-            VisionResultView(
-                original: image,
-                result: rendered,
-                color: selectedColor,
-                target: target
-            )
-        }
-        .alert("Couldn't render preview", isPresented: .constant(errorMessage != nil)) {
-            Button("OK") { errorMessage = nil }
-        } message: {
-            Text(errorMessage ?? "")
-        }
-        .animation(.easeInOut(duration: 0.25), value: isGenerating)
+        .animation(.easeInOut(duration: 0.25), value: isDetecting)
+        .task { await PaintColorCatalog.shared.loadIfNeeded() }
     }
 
     // MARK: Sections
@@ -97,51 +87,58 @@ struct VisualizeView: View {
         }
     }
 
-    private var colorSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionLabel(icon: "paintpalette.fill", title: "Choose a color")
-            Button {
-                Haptics.tap()
-                showLibrary = true
-            } label: {
-                HStack(spacing: 14) {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(selectedColor?.color ?? Theme.canvasDeep)
-                        .frame(width: 54, height: 54)
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.hairline, lineWidth: 1))
-                        .overlay {
-                            if selectedColor == nil {
-                                Image(systemName: "plus")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundStyle(Theme.brand)
-                            }
-                        }
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(selectedColor?.name ?? "Browse paint library")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(Theme.ink)
-                        Text(selectedColor.map { "\($0.brand.displayName) · \($0.code)" } ?? "Sherwin-Williams, Benjamin Moore & PPG")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Theme.inkSecondary)
-                            .lineLimit(1)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Theme.inkSecondary.opacity(0.5))
-                }
-                .paintCard()
+    private var howItWorks: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            stepRow(
+                number: 1,
+                icon: "viewfinder",
+                title: "One-time detection",
+                text: "We find \(target.promptPhrase) in your photo."
+            )
+            stepRow(
+                number: 2,
+                icon: "paintpalette.fill",
+                title: "Instant color try-ons",
+                text: "Tap any of 7,700+ real Sherwin-Williams, Benjamin Moore & PPG colors — the photo repaints immediately."
+            )
+            stepRow(
+                number: 3,
+                icon: "sparkles",
+                title: "HD render when you're ready",
+                text: "Love one? Get a photorealistic AI version to save and share."
+            )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .paintCard()
+    }
+
+    private func stepRow(number: Int, icon: String, title: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Theme.lavender)
+                    .frame(width: 38, height: 38)
+                Image(systemName: icon)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Theme.brand)
             }
-            .buttonStyle(.plain)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 14.5, weight: .bold))
+                    .foregroundStyle(Theme.ink)
+                Text(text)
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundStyle(Theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
-    private var generateBar: some View {
-        PrimaryButton(title: isGenerating ? "Painting…" : "Generate Preview", systemImage: "wand.and.stars") {
-            generate()
+    private var startBar: some View {
+        PrimaryButton(title: "Start Painting", systemImage: "paintbrush.pointed.fill") {
+            startPainting()
         }
-        .disabled(selectedColor == nil || isGenerating)
-        .opacity(selectedColor == nil ? 0.55 : 1)
+        .disabled(isDetecting)
         .padding(.horizontal, 16)
         .padding(.top, 12)
         .padding(.bottom, 8)
@@ -151,19 +148,26 @@ struct VisualizeView: View {
         )
     }
 
-    private func generate() {
-        guard let color = selectedColor, !isGenerating else { return }
-        isGenerating = true
+    // MARK: Detection
+
+    private func startPainting() {
+        guard !isDetecting else { return }
+        isDetecting = true
         Task {
+            let base = ImageResizer.normalizedUpright(image)
+            var engine: RecolorEngine?
             do {
-                let rendered = try await service.repaint(image: image, color: color, target: target)
+                let mask = try await maskService.detectSurface(in: base, target: target)
+                engine = try await Task.detached(priority: .userInitiated) {
+                    try RecolorEngine(photo: base, mask: mask)
+                }.value
                 Haptics.success()
-                isGenerating = false
-                result = rendered
             } catch {
-                isGenerating = false
-                errorMessage = (error as? LocalizedError)?.errorDescription ?? "Please try again."
+                // Quiet fallback: the canvas will use classic AI renders instead.
+                engine = nil
             }
+            isDetecting = false
+            session = LivePaintSession(base: base, target: target, engine: engine)
         }
     }
 }
@@ -200,6 +204,9 @@ struct TargetChip: View {
 
 struct PaintingOverlay: View {
     let color: Color
+    var title: String = "Painting your preview…"
+    var subtitle: String = "This usually takes a few seconds"
+
     @State private var sweep: CGFloat = -1
     @State private var pulse = false
 
@@ -220,12 +227,14 @@ struct PaintingOverlay: View {
                         .foregroundStyle(.white)
                         .rotationEffect(.degrees(sweep * 12))
                 }
-                Text("Painting your preview…")
+                Text(title)
                     .font(.system(size: 17, weight: .bold))
                     .foregroundStyle(Theme.ink)
-                Text("This usually takes a few seconds")
+                Text(subtitle)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Theme.inkSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
             }
         }
         .onAppear {

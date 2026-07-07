@@ -62,6 +62,7 @@ struct RootView: View {
         .tint(Theme.brand)
         .preferredColorScheme(appearanceMode.colorScheme)
         .environment(router)
+        .task { await PaintColorCatalog.shared.loadIfNeeded() }
     }
 
     /// Keeps every tab mounted so navigation & scroll state survive switching;

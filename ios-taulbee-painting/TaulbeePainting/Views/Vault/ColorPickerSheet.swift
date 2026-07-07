@@ -35,7 +35,7 @@ struct ColorPickerSheet: View {
     private enum PickerMode { case library, custom }
 
     private var results: [PaintColor] {
-        PaintColorLibrary.colors(brand: brand, family: nil, query: query)
+        PaintColorCatalog.shared.colors(brand: brand, family: nil, query: query)
     }
 
     var body: some View {
@@ -59,6 +59,7 @@ struct ColorPickerSheet: View {
                     Button("Cancel") { dismiss() }
                 }
             }
+            .task { await PaintColorCatalog.shared.loadIfNeeded() }
         }
     }
 

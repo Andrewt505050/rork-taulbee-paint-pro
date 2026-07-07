@@ -61,8 +61,14 @@ nonisolated struct PaintColor: Identifiable, Codable, Equatable, Hashable {
 
     var color: Color { Color(hex: hex) }
 
+    /// Brand-prefixed product code without double prefixes,
+    /// e.g. "SW 7008" or "PPG1001-1".
+    var displayCode: String {
+        code.hasPrefix(brand.short) ? code : "\(brand.short) \(code)"
+    }
+
     /// e.g. "SW 7008 · Alabaster"
-    var label: String { "\(brand.short) \(code) · \(name)" }
+    var label: String { "\(displayCode) · \(name)" }
 
     /// Approximate brightness 0...1 to choose readable foreground text.
     var luminance: Double {

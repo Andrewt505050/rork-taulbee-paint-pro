@@ -34,6 +34,23 @@ nonisolated enum ImageResizer {
         return nil
     }
 
+    /// Draws the image upright (orientation baked in) at 1x scale, capped to
+    /// `maxEdge` on the long side. Shared base for surface detection and
+    /// instant recoloring so masks and renders always align pixel-for-pixel.
+    static func normalizedUpright(_ image: UIImage, maxEdge: CGFloat = 1600) -> UIImage {
+        let size = image.size
+        let longEdge = max(size.width, size.height)
+        guard longEdge > 0 else { return image }
+        let scale = min(1, maxEdge / longEdge)
+        let newSize = CGSize(width: floor(size.width * scale), height: floor(size.height * scale))
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        format.opaque = true
+        return UIGraphicsImageRenderer(size: newSize, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+    }
+
     /// A small JPEG suitable for persisting as a thumbnail/full record.
     static func storageJPEG(_ image: UIImage) -> Data {
         let resized = resize(image, maxEdge: 1400) ?? image

@@ -150,8 +150,9 @@ nonisolated struct ColorVisualizerService {
 // MARK: - Response decoding
 
 /// Gemini may return images either as plain strings or `{ image_url: { url } }`
-/// objects in `message.images[]`. This handles both shapes.
-private nonisolated struct ImageChatResponse: Decodable {
+/// objects in `message.images[]`. This handles both shapes. Shared with the
+/// surface-detection service.
+nonisolated struct ImageChatResponse: Decodable {
     struct Choice: Decodable {
         struct Message: Decodable {
             let images: [ImageEntry]?
@@ -161,7 +162,7 @@ private nonisolated struct ImageChatResponse: Decodable {
     let choices: [Choice]
 }
 
-private nonisolated struct ImageEntry: Decodable {
+nonisolated struct ImageEntry: Decodable {
     let raw: String?
 
     private struct ImageURL: Decodable { let url: String }

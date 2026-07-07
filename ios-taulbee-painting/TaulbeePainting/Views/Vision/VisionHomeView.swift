@@ -110,7 +110,7 @@ struct VisionHomeView: View {
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Upload a room or exterior photo, choose a real paint color, and preview it instantly.")
+                Text("Upload a photo, then tap through 7,700+ real Sherwin-Williams, Benjamin Moore & PPG colors — your walls repaint instantly.")
                     .font(.system(size: 14.5, weight: .medium))
                     .foregroundStyle(.white.opacity(0.9))
                     .multilineTextAlignment(.center)

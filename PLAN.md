@@ -57,6 +57,18 @@ Retention layer that turns the app into a lead magnet, customer portal, project 
 - [x] Lead capture: in-app Request Estimate form (name, contact, room, details, photos) replacing bare email links everywhere; soft prompts after scans (Request Inspection), after saving colors (Ask a Paint Expert), after creating a room (Want pricing?), and on overdue reminders (Want us to take a look?).
 - [x] More menu: Homeowner Hub group with Maintenance Reminders, Paint Vault, Saved Colors, Project Photos, and Activity Timeline.
 
+## Functional Vision Tool (latest)
+
+The visualizer is now a real product: instant wall painting with the complete color books.
+
+- [x] Complete color catalogs bundled in-app: 7,734 real colors (1,526 Sherwin-Williams, 4,118 Benjamin Moore, 2,090 PPG) with true names, product codes, and swatches — browsable offline.
+- [x] One-time AI surface detection per photo + surface (walls, siding, trim, door, cabinets), then unlimited instant on-device recolors that keep the room's real lighting, shadows, and texture (no per-color AI cost).
+- [x] Live Paint canvas: full-bleed photo, swipeable bottom color strip with Popular bestsellers + recent library picks, current-color chip, hold-to-compare with the original, and surface switching from the toolbar.
+- [x] HD Render on demand — the photorealistic AI render is now an upgrade step for the color you love (cached per color/surface).
+- [x] Smart fallback: if detection can't find the surface, the canvas quietly switches to classic per-color AI renders.
+- [x] Color Library upgrade: Popular Picks shelf, search by name or code across all 7,700+ colors, brand + family filters; the Vault color picker uses the full books too.
+- [x] Saving, before/after slider, Ask an Expert, and Send to Taulbee all work with instant previews and HD renders.
+
 ## Note
 
-This completes all four features from your original vision, the premium redesign, and the Homeowner Hub retention layer.
+This completes all four features from your original vision, the premium redesign, the Homeowner Hub retention layer, and the functional Vision Tool.
