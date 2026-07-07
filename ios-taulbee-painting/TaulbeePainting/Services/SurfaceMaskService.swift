@@ -29,7 +29,12 @@ nonisolated struct SurfaceMaskService {
         Create a segmentation mask of this photo. Output ONLY an image with the exact same \
         framing and aspect ratio as the input photo, where every pixel that belongs to \
         \(target.promptPhrase) is pure white (#FFFFFF) and every other pixel is pure black \
-        (#000000). Use only those two flat colors — no gray tones, no gradients, no outlines, \
+        (#000000).
+        Be strict about the surface boundary: \(target.maskExclusions) are NOT part of the \
+        target surface and must stay pure black, even where they are a very similar color or \
+        brightness to it. Follow the geometry of the scene — a plane that changes orientation \
+        (like where a wall meets the ceiling) is a boundary, not a continuation.
+        Use only those two flat colors — no gray tones, no gradients, no outlines, \
         no text, and no labels. Do not repaint, restyle, or alter the scene in any other way; \
         return strictly the black-and-white mask image.
         """

@@ -73,6 +73,28 @@ nonisolated enum PaintTarget: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Surfaces the detection mask must explicitly exclude — the ones most
+    /// often confused with this target (e.g. a pale ceiling reading as a wall).
+    var maskExclusions: String {
+        switch self {
+        case .interiorWalls:
+            "the ceiling, the floor, baseboards, crown molding, trim, doors, door and " +
+            "window frames, window glass, furniture, and decor"
+        case .exteriorSiding:
+            "the roof, soffits, fascia, gutters, trim, doors, windows, the foundation, " +
+            "walkways, and landscaping"
+        case .trim:
+            "the broad wall surfaces, the ceiling, the floor, door faces, window glass, " +
+            "and furniture"
+        case .frontDoor:
+            "the surrounding walls or siding, sidelight and transom glass, the porch, " +
+            "and the floor"
+        case .cabinets:
+            "countertops, the backsplash, walls, the ceiling, the floor, appliances, " +
+            "and items on or inside the cabinets"
+        }
+    }
+
     /// Compact name for the surface chips on the live canvas.
     var shortLabel: String {
         switch self {
