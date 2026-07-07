@@ -125,24 +125,33 @@ nonisolated struct ColorVisualizerService {
         let url = URL(string: "\(baseURL)/v2/vercel/v1/chat/completions")!
 
         let ordered = plan.sorted { $0.target.zOrder < $1.target.zOrder }
-        let assignments = ordered
-            .map { paint in
-                "- \(paint.target.promptPhrase): paint with \"\(paint.color.name)\" " +
-                "(\(paint.color.brand.displayName) \(paint.color.code)), approximately hex #\(paint.color.hex)"
+        let assignments = ordered.enumerated()
+            .map { index, paint in
+                "\(index + 1). \(paint.target.promptPhrase) → repaint ONLY in " +
+                "\"\(paint.color.name)\" (\(paint.color.brand.displayName) \(paint.color.code)), " +
+                "hex #\(paint.color.hex) — \(Self.plainDescription(ofHex: paint.color.hex))."
             }
             .joined(separator: "\n")
         let phrases = ordered.map { $0.target.promptPhrase }.joined(separator: "; ")
 
         let prompt = """
-        Repaint the following surfaces in this photo, each with its own specified paint color:
+        Repaint specific surfaces in this photo. This is the exact color assignment — each \
+        numbered surface receives its own color and no other:
         \(assignments)
-        Apply every color realistically, following the existing lighting, shadows, highlights, \
-        surface texture and perspective so it looks like a real professional paint job. Where two \
-        repainted surfaces meet, keep the edges crisp and clean, as if walls, trim and doors were \
-        cut in separately by a professional painter. Keep everything else exactly the same — do \
-        not change furniture, flooring, windows, glass, hardware, plants, sky, landscaping, \
-        people, or any surface other than: \(phrases). Produce a clean, photorealistic result at \
-        the same composition and framing as the original photo.
+        Strict rules:
+        - NEVER swap, exchange, or move a color between surfaces. The color in rule 1 goes only \
+        on the surface in rule 1, the color in rule 2 only on the surface in rule 2, and so on.
+        - Each hex value and plain-language description tells you exactly how that surface must \
+        read afterwards (for example dark vs light). Verify each repainted surface matches its \
+        own description before finishing.
+        - Apply every color realistically, following the existing lighting, shadows, highlights, \
+        surface texture and perspective so it looks like a real professional paint job.
+        - Where two repainted surfaces meet, keep the edges crisp and clean, as if walls, trim \
+        and doors were cut in separately by a professional painter.
+        - Keep everything else exactly the same — do not change furniture, flooring, windows, \
+        glass, hardware, plants, sky, landscaping, people, or any surface other than: \(phrases).
+        - Produce a clean, photorealistic result at the same composition and framing as the \
+        original photo.
         """
 
         let body: [String: Any] = [
@@ -189,6 +198,62 @@ nonisolated struct ColorVisualizerService {
             throw VisualizerError.decodingFailed
         }
         return result
+    }
+
+    /// Plain-language read of a hex color (e.g. "a dark, muted navy blue"),
+    /// because image models follow verbal color descriptions far more
+    /// reliably than raw hex values — this anchors each surface to how its
+    /// paint should visibly read.
+    private static func plainDescription(ofHex hex: String) -> String {
+        let rgb = PaintColor.rgb(from: hex)
+        let maxChannel = max(rgb.r, rgb.g, rgb.b)
+        let minChannel = min(rgb.r, rgb.g, rgb.b)
+        let delta = maxChannel - minChannel
+        let luma = 0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b
+        let saturation = maxChannel > 0 ? delta / maxChannel : 0
+
+        let lightness: String
+        switch luma {
+        case ..<0.16: lightness = "a near-black"
+        case ..<0.32: lightness = "a very dark"
+        case ..<0.5: lightness = "a dark"
+        case ..<0.68: lightness = "a medium"
+        case ..<0.85: lightness = "a light"
+        default: lightness = "a very light, near-white"
+        }
+
+        guard saturation >= 0.06 else {
+            return "\(lightness) neutral gray tone"
+        }
+
+        var hue: Double = 0
+        if delta > 0 {
+            if maxChannel == rgb.r {
+                hue = ((rgb.g - rgb.b) / delta).truncatingRemainder(dividingBy: 6)
+            } else if maxChannel == rgb.g {
+                hue = (rgb.b - rgb.r) / delta + 2
+            } else {
+                hue = (rgb.r - rgb.g) / delta + 4
+            }
+            hue *= 60
+            if hue < 0 { hue += 360 }
+        }
+
+        let hueName: String
+        switch hue {
+        case ..<15: hueName = "red"
+        case ..<40: hueName = "orange"
+        case ..<68: hueName = "yellow"
+        case ..<150: hueName = "green"
+        case ..<195: hueName = "teal"
+        case ..<255: hueName = "blue"
+        case ..<290: hueName = "purple"
+        case ..<335: hueName = "pink"
+        default: hueName = "red"
+        }
+
+        let intensity = saturation < 0.28 ? "muted " : (saturation > 0.65 ? "vivid " : "")
+        return "\(lightness) \(intensity)\(hueName)"
     }
 }
 
