@@ -1,0 +1,40 @@
+{
+  "dataTypes": [
+    {
+      "dataType": "Photos or Videos",
+      "purposes": ["App Functionality"],
+      "linkedToUser": false,
+      "usedForTracking": false,
+      "note": "Room/exterior photos and paint defect photos the user chooses are sent over HTTPS to the AI processing service only to generate surface detection, HD renders, and defect diagnoses. Processed transiently; results are stored on device only."
+    },
+    {
+      "dataType": "Name",
+      "purposes": ["App Functionality"],
+      "linkedToUser": false,
+      "usedForTracking": false,
+      "note": "Entered by the user in the Request Estimate form; sent to Taulbee Painting through the user's own email app when they choose to send."
+    },
+    {
+      "dataType": "Email Address",
+      "purposes": ["App Functionality"],
+      "linkedToUser": false,
+      "usedForTracking": false,
+      "note": "Optional contact field in the Request Estimate form; sent via the user's own email app."
+    },
+    {
+      "dataType": "Phone Number",
+      "purposes": ["App Functionality"],
+      "linkedToUser": false,
+      "usedForTracking": false,
+      "note": "Optional contact field in the Request Estimate form; sent via the user's own email app."
+    },
+    {
+      "dataType": "Other User Content",
+      "purposes": ["App Functionality"],
+      "linkedToUser": false,
+      "usedForTracking": false,
+      "note": "Paint Expert questions and estimate project details, used only to generate answers / respond to the request."
+    }
+  ],
+  "tracking": false
+}

@@ -1,0 +1,40 @@
+{
+  "theme": {
+    "style": "A vivid, friendly painter's palette world built from lavender, violet, and warm amber-coral, evoking freshly mixed paint swatches and drying pigment under soft studio light. Surfaces feel like smooth poured paint and soft paper textures, with rounded glowing shapes suggesting color swatches and chat bubbles. The mood is bold, welcoming, and confident, never corporate or cold.",
+    "headlineFont": "'Plus Jakarta Sans', sans-serif — import via @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&display=swap')",
+    "headlineFontSize": 120,
+    "mockupIds": {
+      "iphone": "cosmic-orange",
+      "ipad": "space-gray"
+    },
+    "palette": {
+      "primary": "#6B3FA0",
+      "secondary": "#B48CE0",
+      "accent": "#FF9A5A"
+    }
+  },
+  "slides": [
+    {
+      "label": "Home",
+      "backgroundPrompt": "Abstract digital art of soft flowing ribbons of lavender and rich violet paint swirling gently across the frame, with warm paper-cream accents drifting through the lower half like light brushstrokes. Colors flow from deep violet #6B3FA0 into soft orchid #B48CE0 with gentle warm cream highlights, lit by soft diffused light from the upper right creating a welcoming glow. Subtle grain texture and soft depth of field blur at the edges, the upper 30% calmer and darker for text overlay, 8K quality, ultra smooth gradients, premium feel, no text, no letters, no UI elements, no device mockups",
+      "backgroundUrl": "https://r2-pub.rork.com/app-store-screenshots/f2bdf10b-9f7b-42c3-8e80-146396e8a836.png"
+    },
+    {
+      "label": "Defect Scanner",
+      "backgroundPrompt": "Abstract digital art set in a deep violet environment with one bold diagonal sweep of warm amber-coral light slicing across the frame like a scanning beam. The palette moves from dark violet #4A2A6B through vivid purple #6B3FA0 into a glowing amber-coral #FF9A5A streak, with dramatic rim lighting and sharp contrast creating visual tension. Fine glowing particles drift near the light sweep, sharp focus at center fading to soft blur at edges, upper 30% remaining dark and calm, 8K quality, ultra smooth gradients, premium feel, no text, no letters, no UI elements, no device mockups",
+      "backgroundUrl": "https://r2-pub.rork.com/app-store-screenshots/0a5124d5-1096-47e1-bbeb-455056ab79e7.png"
+    },
+    {
+      "label": "Paint Expert",
+      "backgroundPrompt": "Abstract digital art featuring soft rounded translucent shapes resembling floating chat bubbles layered in glassy purple and orchid tones, gently overlapping across a vivid violet gradient background. Colors shift smoothly from deep purple #6B3FA0 to bright orchid #B48CE0 with a warm coral #FF9A5A glow pooling softly behind the central shapes, illuminated by soft volumetric light from above. Subtle glass morphism layering creates depth, edges softly blurred, upper 30% darker and uncluttered for text, 8K quality, ultra smooth gradients, premium feel, no text, no letters, no UI elements, no device mockups",
+      "backgroundUrl": "https://r2-pub.rork.com/app-store-screenshots/458eb7d1-0765-4a4b-b1d4-06ad1c58bda5.png"
+    }
+  ],
+  "headlines": {
+    "en": {
+      "Home": "Your Painting<br>Companion",
+      "Defect Scanner": "Spot Paint<br>Problems Instantly",
+      "Paint Expert": "Ask a Painter<br>Anytime"
+    }
+  }
+}

@@ -1,10 +1,15 @@
 {
+  "$schema": "https://rork.com/schema/rork.json",
   "apps": [
     {
       "name": "Taulbee Painting",
       "path": "ios-taulbee-painting",
       "framework": "swift"
+    },
+    {
+      "name": "Taulbee Painting Website",
+      "path": "web",
+      "framework": "web"
     }
-  ],
-  "$schema": "https://rork.com/schema/rork.json"
+  ]
 }
