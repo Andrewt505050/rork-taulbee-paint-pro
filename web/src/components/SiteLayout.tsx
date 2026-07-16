@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Mail } from "lucide-react";
+import { Mail, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS: { label: string; to: string }[] = [
@@ -8,7 +8,9 @@ const NAV_LINKS: { label: string; to: string }[] = [
   { label: "Terms", to: "/terms" },
 ];
 
-const SUPPORT_EMAIL = "hello@taulbeepainting.com";
+const SUPPORT_EMAIL = "taulbeepainting2@gmail.com";
+const SUPPORT_PHONE = "513-594-7595";
+const SUPPORT_PHONE_TEL = "tel:+15135947595";
 
 /** Shared chrome (header + footer) for every page of the Taulbee Painting site. */
 const SiteLayout = ({ children }: { children: React.ReactNode }) => {
@@ -90,6 +92,13 @@ const SiteLayout = ({ children }: { children: React.ReactNode }) => {
                 <Mail className="h-4 w-4" />
                 {SUPPORT_EMAIL}
               </a>
+              <a
+                href={SUPPORT_PHONE_TEL}
+                className="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <Phone className="h-4 w-4" />
+                {SUPPORT_PHONE}
+              </a>
             </div>
           </div>
           <p className="mt-8 text-xs text-muted-foreground">
@@ -104,5 +113,5 @@ const SiteLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export { SUPPORT_EMAIL };
+export { SUPPORT_EMAIL, SUPPORT_PHONE, SUPPORT_PHONE_TEL };
 export default SiteLayout;

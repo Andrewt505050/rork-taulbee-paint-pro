@@ -1,5 +1,9 @@
-import { Mail, LifeBuoy, Camera, Wand2, BellRing, Trash2 } from "lucide-react";
-import SiteLayout, { SUPPORT_EMAIL } from "@/components/SiteLayout";
+import { Mail, Phone, LifeBuoy, Camera, Wand2, BellRing, Trash2 } from "lucide-react";
+import SiteLayout, {
+  SUPPORT_EMAIL,
+  SUPPORT_PHONE,
+  SUPPORT_PHONE_TEL,
+} from "@/components/SiteLayout";
 
 const FAQS: { icon: React.ElementType; q: string; a: string }[] = [
   {
@@ -58,16 +62,24 @@ const Support = () => (
               Contact us
             </h2>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              Email is the fastest way to reach the team. We usually reply
-              within two business days.
+              Email or call — we usually reply within two business days.
             </p>
-            <a
-              href={`mailto:${SUPPORT_EMAIL}?subject=Taulbee%20Painting%20app%20support`}
-              className="mt-3 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.02]"
-            >
-              <Mail className="h-4 w-4" />
-              {SUPPORT_EMAIL}
-            </a>
+            <div className="mt-3 flex flex-wrap gap-2.5">
+              <a
+                href={`mailto:${SUPPORT_EMAIL}?subject=Taulbee%20Painting%20app%20support`}
+                className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.02]"
+              >
+                <Mail className="h-4 w-4" />
+                {SUPPORT_EMAIL}
+              </a>
+              <a
+                href={SUPPORT_PHONE_TEL}
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground transition-transform hover:scale-[1.02]"
+              >
+                <Phone className="h-4 w-4" />
+                {SUPPORT_PHONE}
+              </a>
+            </div>
           </div>
         </div>
         <div className="mt-5 rounded-xl bg-muted/60 p-4">

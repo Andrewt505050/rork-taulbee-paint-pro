@@ -11,11 +11,11 @@ import Foundation
 enum BusinessInfo {
     static let name = "Taulbee Painting"
     static let tagline = "Quality interior & exterior painting"
-    static let phone = "(555) 123-4567"
-    static let phoneDialable = "5551234567"
-    static let email = "hello@taulbeepainting.com"
-    static let website = "taulbeepainting.com"
-    static let websiteURL = "https://taulbeepainting.com"
+    static let phone = "513-594-7595"
+    static let phoneDialable = "5135947595"
+    static let email = "taulbeepainting2@gmail.com"
+    static let website = "taulbeepainting.app"
+    static let websiteURL = "https://taulbeepainting.app"
 
     /// Prefilled mailto link for requesting a quote/estimate from the team.
     static var quoteMailto: String {
