@@ -11,7 +11,7 @@
       "path": "web",
       "framework": "web",
       "settings": {
-        "webSlug": "taulbeepainting"
+        "webSlug": "taulbeepainting-app"
       }
     }
   ]
