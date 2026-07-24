@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS: { label: string; to: string }[] = [
+  { label: "Homeowner Tools", to: "/tools" },
   { label: "Support", to: "/support" },
   { label: "Privacy", to: "/privacy" },
   { label: "Terms", to: "/terms" },
@@ -36,12 +37,13 @@ const SiteLayout = ({ children }: { children: React.ReactNode }) => {
                 key={link.to}
                 to={link.to}
                 className={cn(
-                  "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+                  "rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors sm:px-3 sm:text-sm",
                   pathname === link.to
                     ? "bg-accent text-accent-foreground"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
+                {link.to === "/tools" && <Sparkles className="mr-1 hidden h-3.5 w-3.5 sm:inline" />}
                 {link.label}
               </Link>
             ))}
@@ -79,7 +81,8 @@ const SiteLayout = ({ children }: { children: React.ReactNode }) => {
                   to={link.to}
                   className="text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  {link.label}
+                  {link.to === "/tools" && <Sparkles className="mr-1 hidden h-3.5 w-3.5 sm:inline" />}
+                {link.label}
                 </Link>
               ))}
             </div>

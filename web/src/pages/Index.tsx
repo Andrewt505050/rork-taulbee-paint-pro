@@ -8,6 +8,8 @@ import {
   Mail,
   ArrowRight,
   Smartphone,
+  Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 import SiteLayout, { SUPPORT_EMAIL } from "@/components/SiteLayout";
 
@@ -81,22 +83,28 @@ const Index = () => (
           <span className="text-primary">before the brush comes out</span>
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
-          Taulbee Painting for iPhone puts 7,700+ real paint colors on your own
-          walls in seconds — then connects you with the professionals who make
-          it real.
+          Plan the project online with 7,700+ real paint colors, AI paint guidance,
+          and a private Paint Vault — then connect with the local professionals who
+          make it real.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <span className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">
-            <Smartphone className="h-4 w-4" />
-            For iPhone — coming to the App Store
-          </span>
           <Link
-            to="/support"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+            to="/tools"
+            className="inline-flex min-h-12 items-center gap-2 rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground shadow-[0_12px_30px_hsl(var(--primary)/0.28)] transition-transform hover:scale-[1.02]"
           >
-            Get support
+            <Sparkles className="h-4 w-4" />
+            Open Homeowner Tools
             <ArrowRight className="h-4 w-4" />
           </Link>
+          <span className="inline-flex min-h-12 items-center gap-2 rounded-full border border-border bg-card px-5 text-sm font-semibold text-foreground shadow-sm">
+            <Smartphone className="h-4 w-4 text-primary" />
+            Also available for iPhone
+          </span>
+        </div>
+        <div className="mx-auto mt-5 flex max-w-xl flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-semibold text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> No account required</span>
+          <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Projects stay in your browser</span>
+          <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Free to use</span>
         </div>
       </div>
     </section>
@@ -157,16 +165,12 @@ const Index = () => (
           Ready for a fresh coat?
         </h2>
         <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-primary-foreground/80">
-          Questions about the app, your privacy, or a painting project — we're
-          one email away.
+          Visualize colors, scan a problem area, or send your project directly to the Taulbee Painting team.
         </p>
-        <a
-          href={`mailto:${SUPPORT_EMAIL}`}
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-card px-6 py-3 text-sm font-semibold text-primary shadow-sm transition-transform hover:scale-[1.02]"
-        >
-          <Mail className="h-4 w-4" />
-          {SUPPORT_EMAIL}
-        </a>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link to="/tools" className="inline-flex items-center gap-2 rounded-full bg-card px-6 py-3 text-sm font-bold text-primary shadow-sm transition-transform hover:scale-[1.02]"><Sparkles className="h-4 w-4" /> Try the free tools</Link>
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 text-sm font-semibold text-primary-foreground"><Mail className="h-4 w-4" /> Email Taulbee</a>
+        </div>
       </div>
       <p className="mt-8 text-center text-xs leading-5 text-muted-foreground">
         These pages support the App Store listing: product info, customer
