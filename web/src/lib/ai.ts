@@ -1,7 +1,7 @@
 import type { ChatMessage, DefectAnalysis, SurfacePaint } from "@/lib/homeownerTypes";
 
 const TOOLKIT_URL = (import.meta.env.EXPO_PUBLIC_TOOLKIT_URL as string | undefined)?.replace(/\/$/, "") ?? "";
-const CHAT_MODEL = "google/gemini-3.5-flash-lite";
+const CHAT_MODEL = "google/gemini-3.1-flash-lite";
 const IMAGE_MODEL = "google/gemini-3.1-flash-lite-image";
 
 const requestAI = async (body: unknown, timeoutMs: number): Promise<unknown> => {

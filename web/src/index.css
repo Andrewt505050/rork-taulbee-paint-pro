@@ -110,6 +110,14 @@ All colors MUST be HSL.
     font-family: Georgia, "Times New Roman", serif;
   }
 
+  .input-field {
+    @apply mt-1.5 min-h-12 w-full rounded-xl border border-input bg-background px-3 py-2 text-base font-normal outline-none focus:ring-2 focus:ring-ring;
+  }
+
+  textarea.input-field {
+    @apply resize-y;
+  }
+
   .legal-prose h2 {
     @apply font-display text-xl font-bold text-foreground mt-10 mb-3;
   }

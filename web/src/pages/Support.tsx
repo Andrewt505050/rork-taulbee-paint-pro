@@ -9,32 +9,32 @@ const FAQS: { icon: React.ElementType; q: string; a: string }[] = [
   {
     icon: Wand2,
     q: "The visualizer can't find my wall or surface",
-    a: "Surface detection works best on clear, well-lit photos taken straight on. Try a photo where the surface fills more of the frame and isn't heavily obstructed. If detection still can't find it, the app automatically falls back to full AI renders per color — you can keep going either way.",
+    a: "Use a clear, well-lit photo, choose a surface, and tap a flat area of it. Once selected, colors change instantly. If the tap catches too little detail, try another spot. You can also request an optional high-quality render.",
   },
   {
     icon: Wand2,
     q: "HD renders or the Paint Expert aren't responding",
-    a: "Instant previews and the color library work offline, but HD renders, surface detection, defect scans, and Expert answers need an internet connection. Check your connection and try again — if it keeps failing, email us with the time it happened.",
+    a: "Instant website previews and the color library run in your browser. High-quality renders, defect scans, and Expert answers need an internet connection. Check your connection and retry; your instant preview and saved browser work remain available.",
   },
   {
     icon: Camera,
     q: "The camera or photo picker isn't working",
-    a: "Open iOS Settings → Privacy & Security → Camera (or Photos) and make sure Taulbee Painting is allowed. You can change these permissions at any time.",
+    a: "On the website, allow camera or photo access when your browser asks, or use the file picker. On iPhone, open Settings → Privacy & Security → Camera or Photos and confirm Taulbee Painting is allowed.",
   },
   {
     icon: BellRing,
     q: "Maintenance reminders aren't appearing",
-    a: "Reminders use local notifications. Check iOS Settings → Notifications → Taulbee Painting and make sure notifications are allowed.",
+    a: "On the website, add important reminders to your calendar because browser alerts are not reliable when the site is closed. On iPhone, check Settings → Notifications → Taulbee Painting.",
   },
   {
     icon: Mail,
     q: "What happens when I request an estimate?",
-    a: "The app composes an email (with your name, contact details, project notes, and any photos you attached) in your own mail app — nothing is sent until you hit send. It goes to our team, and we'll reply to arrange the estimate.",
+    a: "The website sends your name, contact details, project notes, and selected photos directly after you press Send. A success message appears only after delivery. If delivery is unavailable, the form offers email and share fallbacks.",
   },
   {
     icon: Trash2,
     q: "How do I delete my data?",
-    a: "Your rooms, saved colors, scans, visualizations, reminders, and chat history live only on your device. Delete individual items in the app, or delete the app to remove everything. There is no account to close.",
+    a: "Your rooms, colors, scans, visualizations, reminders, and chat history live only in this browser or on your iPhone. Delete individual items, use Delete All on the website’s More page, clear site data, or delete the iPhone app. There is no account to close.",
   },
 ];
 
@@ -42,13 +42,13 @@ const Support = () => (
   <SiteLayout>
     <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
       <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-        Taulbee Painting for iPhone
+        Taulbee Painting website & iPhone app
       </p>
       <h1 className="font-display mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
         Support
       </h1>
       <p className="mt-4 text-[15px] leading-7 text-muted-foreground">
-        Need help with the Taulbee Painting app? We're happy to help with
+        Need help with the Taulbee Painting website or iPhone app? We're happy to help with
         anything — from visualizer questions to estimate requests.
       </p>
 
@@ -118,7 +118,7 @@ const Support = () => (
       </div>
 
       <p className="mt-10 text-sm leading-6 text-muted-foreground">
-        The Taulbee Painting app is free, has no accounts, and no in-app
+        The Taulbee Painting website and iPhone app are free, have no accounts, and no
         purchases — so there's nothing to cancel or refund. For privacy
         questions or data requests, see our{" "}
         <a

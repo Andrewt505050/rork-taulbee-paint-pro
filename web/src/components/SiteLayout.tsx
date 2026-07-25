@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Mail, Phone, Sparkles } from "lucide-react";
+import { Mail, Menu, Phone, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS: { label: string; to: string }[] = [
@@ -16,6 +17,7 @@ const SUPPORT_PHONE_TEL = "tel:+15135947595";
 /** Shared chrome (header + footer) for every page of the Taulbee Painting site. */
 const SiteLayout = ({ children }: { children: React.ReactNode }) => {
   const { pathname } = useLocation();
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -31,7 +33,7 @@ const SiteLayout = ({ children }: { children: React.ReactNode }) => {
               Taulbee Painting
             </span>
           </Link>
-          <nav className="flex items-center gap-1 sm:gap-2">
+          <nav className="hidden items-center gap-1 sm:flex sm:gap-2">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.to}
@@ -48,7 +50,9 @@ const SiteLayout = ({ children }: { children: React.ReactNode }) => {
               </Link>
             ))}
           </nav>
+          <button type="button" onClick={() => setMenuOpen((open) => !open)} className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card sm:hidden" aria-label="Toggle navigation" aria-expanded={menuOpen}>{menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
         </div>
+        {menuOpen && <nav className="border-t border-border/70 bg-card p-3 sm:hidden" aria-label="Mobile navigation">{NAV_LINKS.map((link) => <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className={cn("flex min-h-12 items-center rounded-xl px-4 text-sm font-bold", pathname === link.to ? "bg-accent text-primary" : "text-foreground")}>{link.to === "/tools" && <Sparkles className="mr-2 h-4 w-4" />}{link.label}</Link>)}</nav>}
       </header>
 
       <main className="flex-1">{children}</main>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Paintbrush,
@@ -11,7 +12,8 @@ import {
   Sparkles,
   CheckCircle2,
 } from "lucide-react";
-import SiteLayout, { SUPPORT_EMAIL } from "@/components/SiteLayout";
+import SiteLayout, { SUPPORT_EMAIL, SUPPORT_PHONE_TEL } from "@/components/SiteLayout";
+import EstimateDialog from "@/components/EstimateDialog";
 
 const FEATURES: { icon: React.ElementType; title: string; body: string }[] = [
   {
@@ -64,7 +66,9 @@ const STEPS: { step: string; title: string; body: string }[] = [
   },
 ];
 
-const Index = () => (
+const Index = () => {
+  const [estimateOpen, setEstimateOpen] = useState<boolean>(false);
+  return (
   <SiteLayout>
     {/* Hero */}
     <section className="relative overflow-hidden">
@@ -88,24 +92,15 @@ const Index = () => (
           make it real.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            to="/tools"
-            className="inline-flex min-h-12 items-center gap-2 rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground shadow-[0_12px_30px_hsl(var(--primary)/0.28)] transition-transform hover:scale-[1.02]"
-          >
-            <Sparkles className="h-4 w-4" />
-            Open Homeowner Tools
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <span className="inline-flex min-h-12 items-center gap-2 rounded-full border border-border bg-card px-5 text-sm font-semibold text-foreground shadow-sm">
-            <Smartphone className="h-4 w-4 text-primary" />
-            Also available for iPhone
-          </span>
+          <Link to="/tools/visualize" className="inline-flex min-h-13 min-w-[220px] items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground shadow-[0_12px_30px_hsl(var(--primary)/0.28)] transition-transform hover:scale-[1.02]"><Sparkles className="h-4 w-4" /> Try the Color Visualizer <ArrowRight className="h-4 w-4" /></Link>
+          <button type="button" onClick={() => setEstimateOpen(true)} className="inline-flex min-h-13 min-w-[220px] items-center justify-center gap-2 rounded-full border-2 border-primary bg-card px-6 text-sm font-bold text-primary shadow-sm transition-transform hover:scale-[1.02]"><Paintbrush className="h-4 w-4" /> Request a Free Estimate</button>
         </div>
         <div className="mx-auto mt-5 flex max-w-xl flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-semibold text-muted-foreground">
           <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> No account required</span>
           <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Projects stay in your browser</span>
           <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Free to use</span>
         </div>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm font-semibold"><a href={SUPPORT_PHONE_TEL} className="text-primary underline underline-offset-4">Call 513-594-7595</a><span className="text-muted-foreground">Local interior & exterior painting</span><a href="https://apps.apple.com/us/search?term=Taulbee%20Painting" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-primary underline underline-offset-4"><Smartphone className="h-4 w-4" /> Find the iPhone app</a></div>
       </div>
     </section>
 
@@ -168,16 +163,16 @@ const Index = () => (
           Visualize colors, scan a problem area, or send your project directly to the Taulbee Painting team.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Link to="/tools" className="inline-flex items-center gap-2 rounded-full bg-card px-6 py-3 text-sm font-bold text-primary shadow-sm transition-transform hover:scale-[1.02]"><Sparkles className="h-4 w-4" /> Try the free tools</Link>
+          <Link to="/tools/visualize" className="inline-flex items-center gap-2 rounded-full bg-card px-6 py-3 text-sm font-bold text-primary shadow-sm transition-transform hover:scale-[1.02]"><Sparkles className="h-4 w-4" /> Try the Visualizer</Link>
+          <button type="button" onClick={() => setEstimateOpen(true)} className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 text-sm font-semibold text-primary-foreground"><Paintbrush className="h-4 w-4" /> Request an Estimate</button>
           <a href={`mailto:${SUPPORT_EMAIL}`} className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 text-sm font-semibold text-primary-foreground"><Mail className="h-4 w-4" /> Email Taulbee</a>
         </div>
       </div>
-      <p className="mt-8 text-center text-xs leading-5 text-muted-foreground">
-        These pages support the App Store listing: product info, customer
-        support, privacy requests, and terms for the Taulbee Painting app.
-      </p>
+      <p className="mt-8 text-center text-xs leading-5 text-muted-foreground">Serving homeowners with quality interior and exterior painting, practical planning tools, and clear project guidance.</p>
     </section>
+    <EstimateDialog open={estimateOpen} onOpenChange={setEstimateOpen} context="Estimate requested from the website landing page" />
   </SiteLayout>
-);
+  );
+};
 
 export default Index;

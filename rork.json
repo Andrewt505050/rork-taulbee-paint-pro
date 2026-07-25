@@ -13,6 +13,11 @@
       "settings": {
         "webSlug": "taulbeepainting-app"
       }
+    },
+    {
+      "name": "Functions",
+      "path": "functions",
+      "framework": "cloudflare"
     }
   ]
 }
