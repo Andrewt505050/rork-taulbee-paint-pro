@@ -1,4 +1,5 @@
 import type { SurfacePaint, SurfacePoint, SurfaceTarget } from "@/lib/homeownerTypes";
+import { surfaceLayer } from "@/lib/surfaces";
 
 export type SurfaceMask = { width: number; height: number; alpha: Uint8ClampedArray; point: SurfacePoint };
 export type VisualizerWorkspace = { width: number; height: number; original: ImageData };
@@ -76,7 +77,8 @@ const hexRGB = (hex: string): [number, number, number] => {
 /** Composites all detected surface colors instantly while retaining source texture and lighting. */
 export const renderWorkspace = (workspace: VisualizerWorkspace, masks: Partial<Record<SurfaceTarget, SurfaceMask>>, scheme: SurfacePaint[]): string => {
   const output = new ImageData(new Uint8ClampedArray(workspace.original.data), workspace.width, workspace.height);
-  for (const paint of scheme) {
+  const ordered = [...scheme].sort((a, b) => surfaceLayer(a.surface) - surfaceLayer(b.surface));
+  for (const paint of ordered) {
     const mask = masks[paint.surface];
     if (!mask) continue;
     const [red, green, blue] = hexRGB(paint.color.hex);

@@ -34,31 +34,77 @@ nonisolated enum VisualizerError: LocalizedError {
 
 /// The surface the customer wants repainted in their photo.
 nonisolated enum PaintTarget: String, CaseIterable, Identifiable {
+    // Interior
     case interiorWalls
-    case exteriorSiding
+    case accentWall
+    case ceiling
     case trim
-    case frontDoor
+    case baseboards
+    case interiorDoors
     case cabinets
+    case kitchenIsland
+    // Exterior
+    case exteriorSiding
+    case frontDoor
+    case garageDoor
+    case shutters
+    case windowTrim
+    case porchRailings
+    case deck
+    case fence
 
     var id: String { rawValue }
+
+    /// Exterior surfaces are grouped separately in the surface pickers.
+    var isExterior: Bool {
+        switch self {
+        case .exteriorSiding, .frontDoor, .garageDoor, .shutters, .windowTrim, .porchRailings, .deck, .fence: true
+        default: false
+        }
+    }
+
+    static var interiorCases: [PaintTarget] { allCases.filter { !$0.isExterior } }
+    static var exteriorCases: [PaintTarget] { allCases.filter(\.isExterior) }
 
     var label: String {
         switch self {
         case .interiorWalls: "Interior walls"
-        case .exteriorSiding: "Exterior siding"
+        case .accentWall: "Accent wall"
+        case .ceiling: "Ceiling"
         case .trim: "Trim & accents"
-        case .frontDoor: "Front door"
+        case .baseboards: "Baseboards"
+        case .interiorDoors: "Interior doors"
         case .cabinets: "Cabinets"
+        case .kitchenIsland: "Kitchen island"
+        case .exteriorSiding: "Exterior siding"
+        case .frontDoor: "Front door"
+        case .garageDoor: "Garage door"
+        case .shutters: "Shutters"
+        case .windowTrim: "Window trim"
+        case .porchRailings: "Porch & railings"
+        case .deck: "Deck"
+        case .fence: "Fence"
         }
     }
 
     var systemImage: String {
         switch self {
         case .interiorWalls: "square.split.bottomrightquarter"
-        case .exteriorSiding: "house.fill"
+        case .accentWall: "paintbrush.fill"
+        case .ceiling: "lamp.ceiling.fill"
         case .trim: "rectangle.portrait.inset.filled"
-        case .frontDoor: "door.left.hand.closed"
+        case .baseboards: "ruler.fill"
+        case .interiorDoors: "door.left.hand.open"
         case .cabinets: "cabinet.fill"
+        case .kitchenIsland: "table.furniture.fill"
+        case .exteriorSiding: "house.fill"
+        case .frontDoor: "door.left.hand.closed"
+        case .garageDoor: "door.garage.closed"
+        case .shutters: "blinds.vertical.closed"
+        case .windowTrim: "window.vertical.closed"
+        case .porchRailings: "stairs"
+        case .deck: "chair.lounge.fill"
+        case .fence: "rectangle.split.3x1"
         }
     }
 
@@ -66,10 +112,21 @@ nonisolated enum PaintTarget: String, CaseIterable, Identifiable {
     var promptPhrase: String {
         switch self {
         case .interiorWalls: "the main interior wall surfaces"
-        case .exteriorSiding: "the exterior siding and main wall surfaces of the house"
+        case .accentWall: "only the single most prominent feature wall facing the camera"
+        case .ceiling: "only the ceiling surface"
         case .trim: "only the trim, molding, baseboards and accent woodwork"
-        case .frontDoor: "only the front entry door"
+        case .baseboards: "only the baseboards along the bottom of the walls"
+        case .interiorDoors: "only the interior doors and their door slabs"
         case .cabinets: "only the cabinet doors, drawer fronts and cabinet frames"
+        case .kitchenIsland: "only the painted base cabinetry of the kitchen island"
+        case .exteriorSiding: "the exterior siding and main wall surfaces of the house"
+        case .frontDoor: "only the front entry door"
+        case .garageDoor: "only the garage door panels"
+        case .shutters: "only the window shutters"
+        case .windowTrim: "only the exterior window frames, casings and window trim"
+        case .porchRailings: "only the porch columns, posts, spindles and railings"
+        case .deck: "only the deck floor boards, deck stairs and deck railings"
+        case .fence: "only the fence boards, pickets and posts"
         }
     }
 
@@ -92,6 +149,31 @@ nonisolated enum PaintTarget: String, CaseIterable, Identifiable {
         case .cabinets:
             "countertops, the backsplash, walls, the ceiling, the floor, appliances, " +
             "and items on or inside the cabinets"
+        case .accentWall:
+            "every other wall, the ceiling, the floor, trim, doors, windows, artwork, " +
+            "furniture, and decor"
+        case .ceiling:
+            "the walls, crown molding, light fixtures, ceiling fans, vents, beams that " +
+            "are a different material, and windows"
+        case .baseboards:
+            "the walls, the floor, door casings, window trim, furniture, and rugs"
+        case .interiorDoors:
+            "the walls, door casings and frames, the floor, hardware, and any glass panes"
+        case .kitchenIsland:
+            "the countertop, perimeter cabinets, stools, appliances, the floor, and " +
+            "items on the island"
+        case .garageDoor:
+            "the surrounding siding, trim, the driveway, the roof, and garage door windows"
+        case .shutters:
+            "the windows, window glass, siding, trim, and the roof"
+        case .windowTrim:
+            "the window glass, the siding, shutters, doors, and the roof"
+        case .porchRailings:
+            "the porch floor, the siding, steps, the ceiling, furniture, and landscaping"
+        case .deck:
+            "the house siding, furniture, grills, planters, the lawn, and landscaping"
+        case .fence:
+            "the lawn, landscaping, the house, neighboring structures, and the sky"
         }
     }
 
@@ -99,10 +181,21 @@ nonisolated enum PaintTarget: String, CaseIterable, Identifiable {
     var shortLabel: String {
         switch self {
         case .interiorWalls: "Walls"
-        case .exteriorSiding: "Siding"
+        case .accentWall: "Accent"
+        case .ceiling: "Ceiling"
         case .trim: "Trim"
-        case .frontDoor: "Door"
+        case .baseboards: "Baseboards"
+        case .interiorDoors: "Doors"
         case .cabinets: "Cabinets"
+        case .kitchenIsland: "Island"
+        case .exteriorSiding: "Siding"
+        case .frontDoor: "Front door"
+        case .garageDoor: "Garage"
+        case .shutters: "Shutters"
+        case .windowTrim: "Windows"
+        case .porchRailings: "Porch"
+        case .deck: "Deck"
+        case .fence: "Fence"
         }
     }
 
@@ -113,9 +206,20 @@ nonisolated enum PaintTarget: String, CaseIterable, Identifiable {
         switch self {
         case .interiorWalls: 0
         case .exteriorSiding: 1
-        case .cabinets: 2
-        case .trim: 3
-        case .frontDoor: 4
+        case .ceiling: 2
+        case .accentWall: 3
+        case .deck: 4
+        case .fence: 5
+        case .porchRailings: 6
+        case .cabinets: 7
+        case .kitchenIsland: 8
+        case .trim: 9
+        case .baseboards: 10
+        case .windowTrim: 11
+        case .shutters: 12
+        case .interiorDoors: 13
+        case .garageDoor: 14
+        case .frontDoor: 15
         }
     }
 }

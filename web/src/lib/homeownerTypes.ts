@@ -1,7 +1,9 @@
 export type PaintBrand = "Sherwin-Williams" | "Benjamin Moore" | "PPG";
 export type ColorFamily = "Whites" | "Neutrals" | "Reds" | "Oranges" | "Yellows" | "Greens" | "Blues" | "Purples" | "Darks";
 export type PaintColor = { id: string; brand: PaintBrand; name: string; code: string; hex: string; family: ColorFamily };
-export type SurfaceTarget = "Interior walls" | "Exterior siding" | "Trim & accents" | "Front door" | "Cabinets";
+export type SurfaceTarget =
+  | "Interior walls" | "Accent wall" | "Ceiling" | "Trim & accents" | "Baseboards" | "Interior doors" | "Cabinets" | "Kitchen island"
+  | "Exterior siding" | "Front door" | "Garage door" | "Shutters" | "Window trim" | "Porch & railings" | "Deck" | "Fence";
 export type SurfacePaint = { surface: SurfaceTarget; color: PaintColor };
 export type SurfacePoint = { x: number; y: number };
 

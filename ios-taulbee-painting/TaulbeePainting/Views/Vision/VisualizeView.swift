@@ -73,9 +73,23 @@ struct VisualizeView: View {
     private var targetSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionLabel(icon: "scope", title: "What should we repaint?")
+            targetRow(title: "Interior", targets: PaintTarget.interiorCases)
+            targetRow(title: "Exterior", targets: PaintTarget.exteriorCases)
+            Text("You can add more surfaces once you start painting.")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Theme.inkSecondary)
+        }
+    }
+
+    private func targetRow(title: String, targets: [PaintTarget]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title.uppercased())
+                .font(.system(size: 11, weight: .bold))
+                .tracking(1.2)
+                .foregroundStyle(Theme.inkSecondary)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
-                    ForEach(PaintTarget.allCases) { t in
+                    ForEach(targets) { t in
                         TargetChip(target: t, isOn: target == t) {
                             Haptics.tap()
                             target = t

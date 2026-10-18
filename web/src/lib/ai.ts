@@ -1,4 +1,5 @@
 import type { ChatMessage, DefectAnalysis, SurfacePaint } from "@/lib/homeownerTypes";
+import { surfaceLayer, surfacePhrase } from "@/lib/surfaces";
 
 const TOOLKIT_URL = (import.meta.env.EXPO_PUBLIC_TOOLKIT_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 const CHAT_MODEL = "google/gemini-3.1-flash-lite";
@@ -128,8 +129,8 @@ const imageFromResponse = (payload: unknown): string => {
 
 export const renderPaintScheme = async (imageDataURL: string, scheme: SurfacePaint[]): Promise<string> => {
   if (scheme.length === 0) throw new Error("Choose at least one surface and color.");
-  const assignments = scheme.map((paint: SurfacePaint, index: number): string =>
-    `${index + 1}. ${paint.surface}: ${paint.color.brand} ${paint.color.code}, ${paint.color.name}, exact hex #${paint.color.hex}.`,
+  const assignments = [...scheme].sort((a, b) => surfaceLayer(a.surface) - surfaceLayer(b.surface)).map((paint: SurfacePaint, index: number): string =>
+    `${index + 1}. ${surfacePhrase(paint.surface)} (${paint.surface}): ${paint.color.brand} ${paint.color.code}, ${paint.color.name}, exact hex #${paint.color.hex}.`,
   ).join("\n");
   const prompt = `Repaint only the assigned surfaces in this home photo:\n${assignments}\nKeep every surface assignment separate and exact. Preserve furniture, windows, floors, hardware, landscaping, people, composition, lighting, texture, shadows, and perspective. Keep boundaries crisp and produce a realistic professional paint finish. Do not modify anything except the listed surfaces.`;
   const payload = await requestAI({

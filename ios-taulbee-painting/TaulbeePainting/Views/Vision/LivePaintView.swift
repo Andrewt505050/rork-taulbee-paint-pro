@@ -318,11 +318,28 @@ struct LivePaintView: View {
 
     private var addSurfaceChip: some View {
         Menu {
-            ForEach(remainingTargets) { target in
-                Button {
-                    addSurface(target)
-                } label: {
-                    Label(target.label, systemImage: target.systemImage)
+            let interior = remainingTargets.filter { !$0.isExterior }
+            let exterior = remainingTargets.filter(\.isExterior)
+            if !interior.isEmpty {
+                Section("Interior") {
+                    ForEach(interior) { target in
+                        Button {
+                            addSurface(target)
+                        } label: {
+                            Label(target.label, systemImage: target.systemImage)
+                        }
+                    }
+                }
+            }
+            if !exterior.isEmpty {
+                Section("Exterior") {
+                    ForEach(exterior) { target in
+                        Button {
+                            addSurface(target)
+                        } label: {
+                            Label(target.label, systemImage: target.systemImage)
+                        }
+                    }
                 }
             }
         } label: {
