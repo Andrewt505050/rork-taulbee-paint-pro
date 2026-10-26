@@ -2,9 +2,10 @@
 //  VisualizeView.swift
 //  TaulbeePainting
 //
-//  Pick the surface to repaint, run the one-time AI surface detection, then
+//  Pick the surface to repaint, tap it in the photo so detection knows
+//  exactly which plane you mean, run the one-time AI surface detection, then
 //  jump into the live painting canvas. If detection can't find the surface,
-//  the canvas quietly falls back to classic AI renders.
+//  you can re-tap or continue with classic AI renders.
 //
 
 import SwiftUI
@@ -15,6 +16,10 @@ struct VisualizeView: View {
     @State private var target: PaintTarget = .interiorWalls
     @State private var isDetecting = false
     @State private var session: LivePaintSession?
+    /// Where the customer tapped the surface, normalized to the upright photo.
+    @State private var hint: CGPoint?
+    @State private var nudgePhoto = false
+    @State private var notFoundMessage: String?
 
     private let maskService = SurfaceMaskService()
 
@@ -51,6 +56,18 @@ struct VisualizeView: View {
         .navigationDestination(item: $session) { session in
             LivePaintView(session: session)
         }
+        .alert("Couldn't find that surface", isPresented: .constant(notFoundMessage != nil)) {
+            Button("Tap Again") {
+                notFoundMessage = nil
+                hint = nil
+            }
+            Button("Continue with AI Renders") {
+                notFoundMessage = nil
+                session = LivePaintSession(base: ImageResizer.normalizedUpright(image), target: target, engine: nil)
+            }
+        } message: {
+            Text(notFoundMessage ?? "")
+        }
         .animation(.easeInOut(duration: 0.25), value: isDetecting)
         .task { await PaintColorCatalog.shared.loadIfNeeded() }
     }
@@ -58,16 +75,57 @@ struct VisualizeView: View {
     // MARK: Sections
 
     private var photoCard: some View {
-        Color(.secondarySystemBackground)
-            .frame(height: 230)
-            .overlay {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .allowsHitTesting(false)
+        VStack(spacing: 10) {
+            // The image is sized by the fixed-height container below, so every
+            // overlay here matches the displayed photo bounds exactly.
+            Image(uiImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .overlay {
+                    SurfaceTapCatcher { point in
+                        Haptics.tap()
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                            hint = point
+                        }
+                    }
+                }
+                .overlay {
+                    if let hint {
+                        SurfacePin(point: hint)
+                    }
+                }
+                .overlay(alignment: .top) {
+                    if hint == nil {
+                        TapPromptBanner(text: "Tap the \(target.shortLabel.lowercased()) in your photo")
+                            .padding(.top, 12)
+                            .padding(.horizontal, 12)
+                            .scaleEffect(nudgePhoto ? 1.06 : 1)
+                            .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    }
+                }
+                .clipShape(.rect(cornerRadius: Theme.cardRadius))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.cardRadius)
+                        .stroke(nudgePhoto ? Theme.brandBright : Theme.hairline, lineWidth: nudgePhoto ? 2.5 : 1)
+                )
+                .animation(.easeInOut(duration: 0.2), value: hint == nil)
+                .frame(maxWidth: .infinity)
+                .frame(height: 320)
+
+            HStack(spacing: 6) {
+                Image(systemName: hint == nil ? "hand.tap" : "checkmark.circle.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(hint == nil ? Theme.inkSecondary : Theme.brand)
+                Text(hint == nil
+                     ? "Tap the middle of the \(target.shortLabel.lowercased()) so we outline the right surface."
+                     : "Got it — we'll find the \(target.shortLabel.lowercased()) under your pin. Tap elsewhere to move it.")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .clipShape(.rect(cornerRadius: Theme.cardRadius))
-            .overlay(RoundedRectangle(cornerRadius: Theme.cardRadius).stroke(Theme.hairline, lineWidth: 1))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 4)
+        }
     }
 
     private var targetSection: some View {
@@ -92,7 +150,10 @@ struct VisualizeView: View {
                     ForEach(targets) { t in
                         TargetChip(target: t, isOn: target == t) {
                             Haptics.tap()
-                            target = t
+                            if target != t {
+                                target = t
+                                withAnimation(.easeInOut(duration: 0.2)) { hint = nil }
+                            }
                         }
                     }
                 }
@@ -107,7 +168,7 @@ struct VisualizeView: View {
                 number: 1,
                 icon: "viewfinder",
                 title: "One-time detection",
-                text: "We find \(target.promptPhrase) in your photo."
+                text: "We find \(target.promptPhrase) in your photo, anchored to the spot you tap, and double-check the outline before painting."
             )
             stepRow(
                 number: 2,
@@ -149,9 +210,13 @@ struct VisualizeView: View {
     }
 
     private var startBar: some View {
-        PrimaryButton(title: "Start Painting", systemImage: "paintbrush.pointed.fill") {
+        PrimaryButton(
+            title: hint == nil ? "Tap the \(target.shortLabel) First" : "Start Painting",
+            systemImage: hint == nil ? "hand.tap.fill" : "paintbrush.pointed.fill"
+        ) {
             startPainting()
         }
+        .opacity(hint == nil ? 0.7 : 1)
         .disabled(isDetecting)
         .padding(.horizontal, 16)
         .padding(.top, 12)
@@ -166,22 +231,36 @@ struct VisualizeView: View {
 
     private func startPainting() {
         guard !isDetecting else { return }
+        guard let hint else {
+            Haptics.warning()
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.5)) { nudgePhoto = true }
+            Task {
+                try? await Task.sleep(for: .seconds(0.9))
+                withAnimation(.easeOut(duration: 0.3)) { nudgePhoto = false }
+            }
+            return
+        }
         isDetecting = true
         Task {
             let base = ImageResizer.normalizedUpright(image)
             var engine: RecolorEngine?
             do {
                 let built = try RecolorEngine(photo: base)
-                let mask = try await maskService.detectSurface(in: base, target: target)
+                let mask = try await maskService.detectSurface(in: base, target: target, hint: hint)
                 try await built.addSurface(target, mask: mask)
                 engine = built
                 Haptics.success()
+            } catch VisualizerError.surfaceNotFound(let missing) {
+                isDetecting = false
+                Haptics.warning()
+                notFoundMessage = VisualizerError.surfaceNotFound(missing).errorDescription
+                return
             } catch {
                 // Quiet fallback: the canvas will use classic AI renders instead.
                 engine = nil
             }
             isDetecting = false
-            session = LivePaintSession(base: base, target: target, engine: engine)
+            session = LivePaintSession(base: base, target: target, engine: engine, hint: hint)
         }
     }
 }

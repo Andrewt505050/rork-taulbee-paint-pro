@@ -155,6 +155,60 @@ actor RecolorEngine {
         return UIImage(cgImage: cgImage)
     }
 
+    /// True when a surface has a prepared layer.
+    func hasSurface(_ target: PaintTarget) -> Bool {
+        layers[target] != nil
+    }
+
+    /// Drops a prepared surface so it can be detected again.
+    func removeSurface(_ target: PaintTarget) {
+        layers[target] = nil
+    }
+
+    /// A transparent overlay that tints the detected surface and traces its
+    /// edge, so the customer can see exactly what will be painted.
+    func highlight(_ target: PaintTarget, hex: String = "8B4AC4") -> UIImage? {
+        guard let layer = layers[target] else { return nil }
+
+        let srgb = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+        let rgb = PaintColor.rgb(from: hex)
+        let tint = CIColor(red: CGFloat(rgb.r), green: CGFloat(rgb.g), blue: CGFloat(rgb.b), colorSpace: srgb)
+            ?? CIColor(red: CGFloat(rgb.r), green: CGFloat(rgb.g), blue: CGFloat(rgb.b))
+        let flat = CIImage(color: tint).cropped(to: extent)
+        let clear = CIImage(color: CIColor(red: 0, green: 0, blue: 0, alpha: 0)).cropped(to: extent)
+
+        // Soft fill across the whole surface.
+        let fillBlend = CIFilter.blendWithMask()
+        fillBlend.inputImage = flat
+        fillBlend.backgroundImage = clear
+        fillBlend.maskImage = layer.featheredMask
+        guard let fillOpaque = fillBlend.outputImage else { return nil }
+
+        let fade = CIFilter.colorMatrix()
+        fade.inputImage = fillOpaque
+        fade.aVector = CIVector(x: 0, y: 0, z: 0, w: 0.38)
+        let fill = fade.outputImage ?? fillOpaque
+
+        // Bright edge: the mask minus a slightly eroded copy of itself.
+        let erode = CIFilter.morphologyMinimum()
+        erode.inputImage = layer.featheredMask.clampedToExtent()
+        erode.radius = Float(max(2.5, min(extent.width, extent.height) / 160))
+        let difference = CIFilter.differenceBlendMode()
+        difference.inputImage = layer.featheredMask
+        difference.backgroundImage = erode.outputImage?.cropped(to: extent) ?? layer.featheredMask
+        let edgeMask = difference.outputImage ?? layer.featheredMask
+
+        let edgeBlend = CIFilter.blendWithMask()
+        edgeBlend.inputImage = CIImage(color: CIColor(red: 1, green: 1, blue: 1)).cropped(to: extent)
+        edgeBlend.backgroundImage = clear
+        edgeBlend.maskImage = edgeMask
+        let edge = edgeBlend.outputImage ?? clear
+
+        let combined = edge.composited(over: fill)
+        guard let cgImage = context.createCGImage(combined, from: extent) else { return nil }
+        return UIImage(cgImage: cgImage)
+    }
+
     // MARK: - Static helpers
 
     private nonisolated static func grayscale(of image: CIImage) -> CIImage {

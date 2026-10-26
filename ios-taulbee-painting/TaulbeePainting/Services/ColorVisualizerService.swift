@@ -17,6 +17,7 @@ nonisolated enum VisualizerError: LocalizedError {
     case serverError(Int)
     case noImageReturned
     case decodingFailed
+    case surfaceNotFound(PaintTarget)
 
     var errorDescription: String? {
         switch self {
@@ -28,6 +29,8 @@ nonisolated enum VisualizerError: LocalizedError {
         case .serverError: "Something went wrong while rendering. Please try again."
         case .noImageReturned: "We couldn't render that preview. Try another photo or color."
         case .decodingFailed: "We couldn't read the rendered image. Please try again."
+        case .surfaceNotFound(let target):
+            "We couldn't find \(target.label.lowercased()) where you tapped. Tap the middle of the \(target.shortLabel.lowercased()) and try again."
         }
     }
 }
@@ -174,6 +177,61 @@ nonisolated enum PaintTarget: String, CaseIterable, Identifiable {
             "the house siding, furniture, grills, planters, the lawn, and landscaping"
         case .fence:
             "the lawn, landscaping, the house, neighboring structures, and the sky"
+        }
+    }
+
+    /// Where this surface sits in a typical photo, phrased for the mask model
+    /// so a pale ceiling is not mistaken for a wall (and vice versa).
+    var geometryNote: String {
+        switch self {
+        case .interiorWalls:
+            "Walls are the VERTICAL surfaces that run from the ceiling line down to the floor or " +
+            "baseboards. The ceiling is the overhead horizontal plane across the TOP of the photo and " +
+            "is never a wall. The floor, carpet and rugs across the BOTTOM of the photo are never a wall."
+        case .accentWall:
+            "The accent wall is one VERTICAL surface from ceiling line to floor. The ceiling across the " +
+            "top of the photo and the floor across the bottom are never part of it."
+        case .ceiling:
+            "The ceiling is the overhead horizontal plane in the UPPER part of the photo, bounded by " +
+            "the line where it meets the walls. Vertical walls below that line are never the ceiling."
+        case .trim:
+            "Trim is made of narrow bands and edges: casings, molding and baseboards. It never fills " +
+            "a broad wall, ceiling or floor plane."
+        case .baseboards:
+            "Baseboards are the narrow horizontal band where the walls meet the floor, in the LOWER " +
+            "part of the photo. The wall above and the floor below are never baseboards."
+        case .interiorDoors:
+            "Doors are vertical rectangular slabs set into the walls; the surrounding wall and casing " +
+            "are not part of the door."
+        case .cabinets:
+            "Cabinets are the boxes with doors and drawer fronts; the countertop above them and the " +
+            "wall or backsplash behind them are never cabinets."
+        case .kitchenIsland:
+            "The island is the freestanding cabinet block in the middle of the kitchen; its countertop " +
+            "is not part of it."
+        case .exteriorSiding:
+            "Siding is the VERTICAL exterior wall surface of the house. The roof above it and the " +
+            "ground, driveway and lawn below it are never siding."
+        case .frontDoor:
+            "The front door is one vertical slab in the entry; the surrounding frame, siding and porch " +
+            "are not part of it."
+        case .garageDoor:
+            "The garage door is the large panelled rectangle; the surrounding trim and driveway are " +
+            "not part of it."
+        case .shutters:
+            "Shutters are the narrow vertical panels flanking each window; the glass and siding are " +
+            "not part of them."
+        case .windowTrim:
+            "Window trim is the narrow frame around each window; the glass inside and the siding " +
+            "outside are never trim."
+        case .porchRailings:
+            "Railings, posts and columns are slender vertical and horizontal members; the porch floor " +
+            "and the siding are not part of them."
+        case .deck:
+            "The deck is the raised wooden platform in the LOWER part of the photo, including its " +
+            "boards, stairs and railings. The house siding above it is never deck."
+        case .fence:
+            "The fence is the row of boards, pickets and posts; the lawn, house and sky are never fence."
         }
     }
 

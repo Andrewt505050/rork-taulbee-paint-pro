@@ -19,6 +19,8 @@ struct LivePaintSession: Identifiable, Hashable {
     /// Shared instant-recolor engine with the first surface prepared, or nil
     /// when detection failed and the canvas starts with classic AI renders.
     let engine: RecolorEngine?
+    /// Where the customer tapped the first surface (normalized, top-left origin).
+    var hint: CGPoint? = nil
 
     static func == (lhs: LivePaintSession, rhs: LivePaintSession) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
@@ -56,6 +58,15 @@ struct LivePaintView: View {
     @State private var errorMessage: String?
     @State private var renderTask: Task<Void, Never>?
     @State private var renderGeneration = 0
+    /// Surface waiting for the customer to tap it in the photo.
+    @State private var tapTarget: PaintTarget?
+    /// Last tap per surface, reused when re-detecting.
+    @State private var hints: [PaintTarget: CGPoint] = [:]
+    @State private var pendingPin: CGPoint?
+    @State private var glowImage: UIImage?
+    @State private var glowToken = 0
+    @State private var fixHintTarget: PaintTarget?
+    @State private var fixHintTask: Task<Void, Never>?
 
     private let maskService = SurfaceMaskService()
     private let hdService = ColorVisualizerService()
@@ -66,6 +77,10 @@ struct LivePaintView: View {
         _surfaces = State(initialValue: [session.target])
         _selectedTarget = State(initialValue: session.target)
         _instantTargets = State(initialValue: session.engine != nil ? [session.target] : [])
+        _hints = State(initialValue: session.hint.map { [session.target: $0] } ?? [:])
+        // Detection failed up front: ask for a tap right away so the surface
+        // can still be found instead of silently falling back.
+        _tapTarget = State(initialValue: session.engine == nil ? session.target : nil)
     }
 
     // MARK: Derived state
@@ -140,7 +155,15 @@ struct LivePaintView: View {
         }
         .animation(.easeInOut(duration: 0.25), value: isRenderingHD)
         .animation(.easeInOut(duration: 0.25), value: detectingTarget)
+        .animation(.easeInOut(duration: 0.2), value: tapTarget)
+        .animation(.easeInOut(duration: 0.2), value: fixHintTarget)
         .task { await PaintColorCatalog.shared.loadIfNeeded() }
+        .task {
+            // Show what the first detection found as soon as the canvas opens.
+            guard session.engine != nil else { return }
+            try? await Task.sleep(for: .seconds(0.35))
+            await showGlow(for: session.target)
+        }
     }
 
     // MARK: Photo stage
@@ -159,19 +182,66 @@ struct LivePaintView: View {
                     .resizable()
                     .transition(.opacity)
             }
+            if let glowImage, !showOriginal {
+                DetectionGlow(image: glowImage, token: glowToken)
+            }
+            if tapTarget != nil {
+                SurfaceTapCatcher { point in
+                    handleSurfaceTap(point)
+                }
+            }
+            if let pendingPin {
+                SurfacePin(point: pendingPin)
+            }
         }
         .aspectRatio(imageAspect, contentMode: .fit)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.easeInOut(duration: 0.18), value: preview)
         .animation(.easeInOut(duration: 0.12), value: showOriginal)
         .clipShape(.rect(cornerRadius: 24))
-        .overlay(RoundedRectangle(cornerRadius: 24).stroke(Theme.hairline, lineWidth: 1))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(tapTarget == nil ? Theme.hairline : Theme.brandBright, lineWidth: tapTarget == nil ? 1 : 2.5)
+        )
         .shadow(color: .black.opacity(0.10), radius: 18, y: 10)
-        .overlay(alignment: .topLeading) { schemeChip.padding(10) }
-        .overlay(alignment: .bottomTrailing) { compareBadge.padding(10) }
+        .overlay(alignment: .topLeading) {
+            if tapTarget == nil { schemeChip.padding(10) }
+        }
+        .overlay(alignment: .top) {
+            if let tapTarget {
+                TapPromptBanner(
+                    text: "Tap the \(tapTarget.shortLabel.lowercased()) in your photo",
+                    onCancel: { cancelTapMode() }
+                )
+                .padding(.top, 12)
+                .padding(.horizontal, 12)
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if tapTarget == nil { compareBadge.padding(10) }
+        }
+        .overlay(alignment: .bottomLeading) {
+            if let fixHintTarget, tapTarget == nil {
+                Button {
+                    Haptics.tap()
+                    beginTapMode(for: fixHintTarget)
+                } label: {
+                    Label("Wrong area? Tap to fix", systemImage: "scope")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Theme.brand)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.thinMaterial, in: .capsule)
+                }
+                .buttonStyle(.plain)
+                .padding(10)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+        }
         .onLongPressGesture(minimumDuration: .infinity) {
         } onPressingChanged: { pressing in
-            guard preview != nil else { return }
+            guard preview != nil, tapTarget == nil else { return }
             showOriginal = pressing
         }
     }
@@ -249,7 +319,12 @@ struct LivePaintView: View {
 
     private var hintRow: some View {
         Group {
-            if assignments.isEmpty {
+            if let tapTarget {
+                Label(
+                    "Tap the middle of the \(tapTarget.shortLabel.lowercased()) to detect it",
+                    systemImage: "hand.tap.fill"
+                )
+            } else if assignments.isEmpty {
                 Label(
                     selectedIsInstant
                         ? "Tap any color to paint the \(selectedTarget.shortLabel.lowercased()) instantly"
@@ -290,6 +365,12 @@ struct LivePaintView: View {
                         selectedTarget = target
                     }
                     .contextMenu {
+                        Button {
+                            Haptics.tap()
+                            beginTapMode(for: target)
+                        } label: {
+                            Label("Re-detect Surface", systemImage: "scope")
+                        }
                         if assignments[target] != nil {
                             Button {
                                 clearColor(for: target)
@@ -523,9 +604,9 @@ struct LivePaintView: View {
         refreshPreview()
     }
 
-    /// Adds a surface to the canvas, running its one-time detection if the
-    /// engine hasn't prepared it before. Detected layers are kept, so
-    /// re-adding a removed surface is instant.
+    /// Adds a surface to the canvas. Previously detected layers are kept, so
+    /// re-adding a removed surface is instant; otherwise the customer taps
+    /// the surface in the photo and detection runs from that point.
     private func addSurface(_ target: PaintTarget) {
         guard !surfaces.contains(target), detectingTarget == nil, !isRenderingHD else { return }
         Haptics.tap()
@@ -538,22 +619,78 @@ struct LivePaintView: View {
             return
         }
 
+        beginTapMode(for: target)
+    }
+
+    /// Switches the photo into tap mode for `target`.
+    private func beginTapMode(for target: PaintTarget) {
+        guard detectingTarget == nil, !isRenderingHD else { return }
+        fixHintTask?.cancel()
+        fixHintTarget = nil
+        glowImage = nil
+        showOriginal = false
+        pendingPin = nil
+        tapTarget = target
+    }
+
+    private func cancelTapMode() {
+        Haptics.tap()
+        tapTarget = nil
+        pendingPin = nil
+    }
+
+    /// Runs (or re-runs) detection for the surface in tap mode, anchored to
+    /// the tapped point, and shows the detected area when it lands.
+    private func handleSurfaceTap(_ point: CGPoint) {
+        guard let target = tapTarget, detectingTarget == nil else { return }
+        Haptics.tap()
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { pendingPin = point }
+        hints[target] = point
         detectingTarget = target
+
         Task {
             do {
                 let engine = try ensureEngine()
-                let mask = try await maskService.detectSurface(in: session.base, target: target)
+                let mask = try await maskService.detectSurface(in: session.base, target: target, hint: point)
                 try await engine.addSurface(target, mask: mask)
                 instantTargets.insert(target)
+                tapTarget = nil
+                pendingPin = nil
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    surfaces.append(target)
+                    if !surfaces.contains(target) { surfaces.append(target) }
                     selectedTarget = target
                 }
+                // A re-detected surface invalidates any HD renders of it.
+                hdCache = [:]
+                refreshPreview()
                 Haptics.success()
+                await showGlow(for: target)
+            } catch VisualizerError.surfaceNotFound(let missing) {
+                pendingPin = nil
+                Haptics.warning()
+                errorMessage = VisualizerError.surfaceNotFound(missing).errorDescription
             } catch {
-                errorMessage = "We couldn't find \(target.label.lowercased()) in this photo, so it wasn't added. Try a photo where it's clearly visible."
+                pendingPin = nil
+                Haptics.warning()
+                errorMessage = (error as? LocalizedError)?.errorDescription
+                    ?? "We couldn't find \(target.label.lowercased()) where you tapped. Try tapping a clearer spot on it."
             }
             detectingTarget = nil
+        }
+    }
+
+    /// Briefly outlines the detected area and offers a quick fix.
+    private func showGlow(for target: PaintTarget) async {
+        guard let engine, let overlay = await engine.highlight(target) else { return }
+        glowImage = overlay
+        glowToken += 1
+        fixHintTask?.cancel()
+        fixHintTarget = target
+        fixHintTask = Task {
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled else { return }
+            fixHintTarget = nil
+            glowImage = nil
         }
     }
 
