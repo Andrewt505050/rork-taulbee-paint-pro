@@ -18,6 +18,30 @@
       "name": "Functions",
       "path": "functions",
       "framework": "cloudflare"
+    },
+    {
+      "name": "Taulbee Promo Video",
+      "path": "web-taulbee-promo-video",
+      "framework": "web",
+      "settings": {
+        "kind": "motion-video"
+      }
+    },
+    {
+      "name": "Taulbee Promo Video (9:16)",
+      "path": "web-taulbee-promo-video-9x16",
+      "framework": "web",
+      "settings": {
+        "kind": "motion-video"
+      }
+    },
+    {
+      "name": "Taulbee Promo Video (1:1)",
+      "path": "web-taulbee-promo-video-1x1",
+      "framework": "web",
+      "settings": {
+        "kind": "motion-video"
+      }
     }
   ]
 }
